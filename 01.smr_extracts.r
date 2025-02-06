@@ -108,7 +108,7 @@ data_smr04 <- as_tibble(
   ungroup()  %>%
   mutate(upi_number = case_when(is.na(upi_number) ~ci_chi_number, T~upi_number))%>%
   filter(!is.na(upi_number))
-  
+
 data_smr04_sub <- as_tibble(
   dbGetQuery(
     SMRAConnection, paste0(
@@ -139,10 +139,10 @@ data_smr04_sub <- as_tibble(
   filter(!is.na(upi_number))
 
 ##filter to exact codes that we need. 
-smr01 <- bind_rows(data_smr01_1e_temp_1, data_smr01_temp_1, data_smr04, data_smr04_sub)
+smr <- bind_rows(data_smr01_1e_temp_1, data_smr01_temp_1, data_smr04, data_smr04_sub)
 
 
-smr01 <- smr01 %>%
+smr <- smr %>%
   mutate(flag_dementia = case_when(substr(main_condition,1,3) %in% icd10_dementia ~1,
                                    substr(other_condition_1,1,3) %in% icd10_dementia ~1,
                                    substr(other_condition_2,1,3) %in% icd10_dementia ~1,
@@ -177,15 +177,14 @@ smr01 <- smr01 %>%
                                      substr(other_condition_5,1,3)  =="F00"~1,
                                      T~0))
 
-table(smr01$flag_G30_codes, smr01$flag_alzheimers)
+table(smr$flag_G30_codes, smr$flag_alzheimers)
 
 #g30 does appear on its own so cant use those?
-
-smr01 <- smr01 %>% filter(flag_dementia==1) %>% mutate()
+smr <- smr %>% filter(flag_dementia==1) %>% mutate()
 
 
 ##summarise but dont lose type of dementia
-smr01 <- smr01 %>%
+smr <- smr %>%
   group_by(upi_number, cis_marker,gls_cis_marker) %>%
   mutate( admission_date = min(admission_date), 
           discharge_date = max(discharge_date),
@@ -194,18 +193,16 @@ smr01 <- smr01 %>%
           hbtreat_currentdate = first_(hbtreat_currentdate), 
           hbres_currentdate = first_(hbres_currentdate)) %>% ungroup
 ##temporary save 
-saveRDS(smr01, paste0(folder_data_path, "/extracts/temp_smr_raw.rds"))
-smr01 <- readRDS(paste0(folder_data_path, "/extracts/temp_smr_raw.rds"))
+saveRDS(smr, paste0(folder_data_path, "/extracts/temp_smr_raw.rds"))
+smr_raw <- readRDS(paste0(folder_data_path, "/extracts/temp_smr_raw.rds"))
 ##long smr extract
-smr01_long <- smr01  %>% ungroup %>%
+smr_long <- smr_raw  %>% ungroup %>%
   pivot_longer(names_to = "diagnosis position", 
                cols = main_condition:other_condition_5, values_to = "diagnosis") %>%
   filter(!is.na(diagnosis))
 
-
-table(smr01$flag_dementia, useNA="always")    
 ##flag dementia types
-smr01_long <- smr01_long %>%
+smr_long <- smr_long %>%
   ##start with the specific
   mutate(flag_dementia = case_when(substr(diagnosis,1,3) %in% icd10_dementia ~1,
                                    substr(diagnosis,1,4) %in% icd10_dementia ~1,
@@ -231,13 +228,13 @@ smr01_long <- smr01_long %>%
                                   T~0), 
          dementia_other_substances =
            case_when(substr(diagnosis,1,5) %in% substance_codes~1, 
-         T~0)) %>%
+                     T~0)) %>%
   filter(flag_dementia==1| lewy_g==1)
 
 ##aggregate on upi and date 
 
-smr01_agg <- smr01_long %>%
-  group_by(upi_number, admission_date, 
+smr_agg <- smr_long %>%
+  group_by(upi_number, admission_date, discharge_date,
            hbtreat_currentdate, location, hbres_currentdate , 
            dob, ethnic_group, 
            dr_postcode, postcode) %>%
@@ -259,7 +256,7 @@ smr01_agg <- smr01_long %>%
   select(-lewy_f, lewy_g)
 #select first date for each dementia type.     
 
-first_dementia_unspec <-smr01_agg %>%
+first_dementia_unspec <-smr_agg %>%
   filter(flag_dementia==1 & alzheimer_flag==0 & dementia_lewy_body==0 &
            dementia_other_dis==0 & vascular_dementia==0 & dementia_alcohol==0) %>%
   arrange(upi_number,admission_date) %>%
@@ -272,7 +269,7 @@ first_dementia_unspec <-smr01_agg %>%
   ungroup() %>%
   mutate(dementia_unspecified=1)
 
-first_alzheimer <-smr01_agg %>%
+first_alzheimer <-smr_agg %>%
   filter(alzheimer_flag==1) %>%
   arrange(upi_number,admission_date) %>%
   group_by(upi_number,alzheimer_flag) %>%
@@ -283,7 +280,7 @@ first_alzheimer <-smr01_agg %>%
             postcode = first(postcode))%>%
   ungroup()
 
-first_alcohol <-smr01_agg %>%
+first_alcohol <-smr_agg %>%
   filter(dementia_alcohol==1) %>%
   arrange(upi_number,admission_date) %>%
   group_by(upi_number,dementia_alcohol) %>%
@@ -294,7 +291,7 @@ first_alcohol <-smr01_agg %>%
             postcode = first(postcode))%>%
   ungroup()
 
-first_vascular <-smr01_agg %>%
+first_vascular <-smr_agg %>%
   filter(vascular_dementia==1) %>%
   arrange(upi_number,admission_date) %>%
   group_by(upi_number, vascular_dementia) %>%
@@ -305,7 +302,7 @@ first_vascular <-smr01_agg %>%
             postcode = first(postcode))%>%
   ungroup()
 
-first_lewy <-smr01_agg %>%
+first_lewy <-smr_agg %>%
   filter(dementia_lewy_body==1) %>%
   arrange(upi_number,admission_date) %>%
   group_by(upi_number,dementia_lewy_body) %>%
@@ -316,7 +313,7 @@ first_lewy <-smr01_agg %>%
             postcode = first(postcode))%>%
   ungroup()
 
-first_picks <-smr01_agg %>%
+first_picks <-smr_agg %>%
   filter(dementia_picks==1) %>%
   arrange(upi_number,admission_date) %>%
   group_by(upi_number,dementia_picks) %>%
@@ -328,7 +325,7 @@ first_picks <-smr01_agg %>%
   ungroup()
 
 
-first_dementia_other_dis <-smr01_agg %>%
+first_dementia_other_dis <-smr_agg %>%
   filter(dementia_picks==0 & dementia_lewy_body==0 &  dementia_other_dis==1) %>%
   arrange(upi_number,admission_date) %>%
   group_by(upi_number,dementia_other_dis) %>%
@@ -382,10 +379,12 @@ multiple_type <- all_first_diags_wide %>% filter(total_types>1)
 multiple_type <- multiple_type %>%
   rowwise() %>% 
   mutate(minimum_date  = min_(c(Unspecified_dementia, Dementia_Alzheimers, Vascular_dementia, Dementia_Lewy_body, 
-                              Dementia_Picks, Dementia_other_diseases, Dementia_alcohol))) %>%
-  mutate(flag_unspec = case_when(Unspecified_dementia != minimum_date ~0, T~flag_unspec)) %>%
-  mutate(Unspecified_dementia = case_when(flag_unspec==0 ~ NA)) %>%
-#check if unspecified dementia recorded at the same date as another diagnosis and discard if so
+                                Dementia_Picks, Dementia_other_diseases, Dementia_alcohol))) %>%
+  ungroup() %>%
+  ##if unspecified dementia is not the first record we drop it
+  mutate(flag_unspec = case_when(Unspecified_dementia!=minimum_date ~0, T~flag_unspec)) %>%
+  mutate(Unspecified_dementia = case_when(flag_unspec==0 ~ NA, T~Unspecified_dementia)) %>%
+  #check if unspecified dementia recorded at the SAME date as another diagnosis discard in this case also
   mutate(Unspecified_dementia = case_when(Unspecified_dementia==Dementia_Alzheimers ~ NA, 
                                           Unspecified_dementia==Vascular_dementia ~NA,
                                           Unspecified_dementia== Dementia_Lewy_body ~NA,
@@ -393,8 +392,8 @@ multiple_type <- multiple_type %>%
                                           Unspecified_dementia== Dementia_other_diseases ~NA,
                                           Unspecified_dementia== Dementia_alcohol ~NA,
                                           T~Unspecified_dementia)) %>%
-mutate(flag_unspec = case_when(is.na(Unspecified_dementia) ~0, T~flag_unspec)) %>%
-mutate(total_types = flag_unspec+flag_alz+flag_vasc+flag_lewy+flag_pick+flag_other_dis+flag_alcohol)
+  mutate(flag_unspec = case_when(is.na(Unspecified_dementia) ~0, T~flag_unspec)) %>%
+  mutate(total_types = flag_unspec+flag_alz+flag_vasc+flag_lewy+flag_pick+flag_other_dis+flag_alcohol)
 
 ##those with just one remaining specific diangosis get joined to one_type
 one_specific_type <- multiple_type %>% filter(total_types==1)
@@ -412,5 +411,172 @@ all_diags <-bind_rows(one_type, multiple_type)
 saveRDS(all_diags, paste0(folder_data_path, "/extracts/smr_all_aggregated.rds" ))
 
 
+smr <- readRDS(paste0(folder_data_path, "/extracts/smr_all_aggregated.rds" ))
+names(smr)
+smr <- smr %>% mutate(dementia_subtype =  case_when(total_types==1 & flag_unspec==1 ~ "07 yet to be determined", 
+                                                    total_types==1 & flag_vasc==1 ~ "02 Vascular Dementia",
+                                                    total_types==1 & flag_alz==1 ~ "01 Dementia in Alzheimer's Disease",
+                                                    total_types==2 & flag_alz==1 & flag_vasc==1 ~ "03 Alzheimer's/Vascular (Mixed)",
+                                                    total_types==1 & flag_lewy==1 ~ "04 Lewy Body Dementia",
+                                                    total_types==1 & flag_pick==1 ~ "05 Frontotemporal Dementia",
+                                                    total_types==1 & flag_alcohol==1 ~ "06 Alcohol-Related Cognitive Impairment",
+                                                    total_types==1 & flag_other_dis ~ "97 Other", 
+                                                    total_types >1 ~"Other mixed types", T~"Unknown"
+)) %>%
+  rowwise() %>% 
+  mutate(last_diagnosis_date =
+           case_when(total_types >1 ~
+                       min_(c(Unspecified_dementia, Dementia_Alzheimers,
+                              Vascular_dementia, Dementia_Lewy_body, 
+                              Dementia_Picks, Dementia_other_diseases, Dementia_alcohol)), T~NA)) %>% 
+  mutate(dementia_subtype_1 = case_when(total_types==1 ~ dementia_subtype, 
+                                        total_types> 1 & !is.na(Dementia_Alzheimers) & 
+                                          !is.na(Vascular_dementia) &
+                                          Dementia_Alzheimers==Vascular_dementia &
+                                          Vascular_dementia==minimum_date ~ "03 Alzheimer's/Vascular (Mixed)",
+                                        total_types> 1 & Vascular_dementia==minimum_date ~ "02 Vascular Dementia",
+                                        total_types> 1 & Dementia_Alzheimers==minimum_date ~ "01 Dementia in Alzheimer's Disease",
+                                        total_types> 1 & Dementia_Lewy_body==minimum_date ~ "04 Lewy Body Dementia",
+                                        total_types> 1 & Dementia_Picks==minimum_date ~ "05 Frontotemporal Dementia",
+                                        total_types> 1 & Dementia_alcohol==minimum_date ~"06 Alcohol-Related Cognitive Impairment",
+                                        total_types> 1 & Dementia_other_diseases==minimum_date ~"97 Other", 
+                                        total_types> 1 & Unspecified_dementia ==minimum_date ~ "07 yet to be determined", 
+                                        T~NA))
+
+two <- smr %>% filter(total_types==2)
+three<- smr %>% filter(total_types==3)
+one <- smr %>% filter(total_types==1)
+
+one <- one %>% select(upi_number, dementia_subtype_1, minimum_date) %>%
+  rename(diagnosis_date_1 = minimum_date)
+
+two <- two %>% rowwise() %>% 
+  mutate(last_diagnosis_date = 
+           max_(c(Unspecified_dementia, Dementia_Alzheimers, Vascular_dementia, Dementia_Lewy_body, 
+                  Dementia_Picks, Dementia_other_diseases, Dementia_alcohol))) %>% 
+  mutate(dementia_subtype_2 = 
+           case_when(minimum_date!=last_diagnosis_date & 
+                       Dementia_Alzheimers==Vascular_dementia & Vascular_dementia==last_diagnosis_date ~ "03 Alzheimer's/Vascular (Mixed)",
+                     minimum_date!=last_diagnosis_date & Vascular_dementia==last_diagnosis_date ~ "02 Vascular Dementia",
+                     minimum_date!=last_diagnosis_date & Dementia_Alzheimers==last_diagnosis_date ~ "01 Dementia in Alzheimer's Disease",
+                     minimum_date!=last_diagnosis_date & Dementia_Lewy_body==last_diagnosis_date ~ "04 Lewy Body Dementia",
+                     minimum_date!=last_diagnosis_date & Dementia_Picks==last_diagnosis_date ~ "05 Frontotemporal Dementia",
+                     minimum_date!=last_diagnosis_date & Dementia_alcohol==last_diagnosis_date ~"06 Alcohol-Related Cognitive Impairment",
+                     minimum_date!=last_diagnosis_date & Dementia_other_diseases==last_diagnosis_date ~"97 Other", 
+                     minimum_date!=last_diagnosis_date & Unspecified_dementia ==last_diagnosis_date ~ "07 yet to be determined",
+                     minimum_date==last_diagnosis_date &  
+                       Dementia_Alzheimers==last_diagnosis_date & dementia_subtype_1 != "01 Dementia in Alzheimer's Disease"  ~
+                       "01 Dementia in Alzheimer's Disease",
+                     minimum_date==last_diagnosis_date &  
+                       Vascular_dementia==last_diagnosis_date & dementia_subtype_1 != "02 Vascular Dementia"  ~
+                       "02 Vascular Dementia",
+                     minimum_date==last_diagnosis_date &   
+                       Dementia_Lewy_body==last_diagnosis_date & dementia_subtype_1 != "04 Lewy Body Dementia"  ~
+                       "04 Lewy Body Dementia",
+                     minimum_date==last_diagnosis_date &   
+                       Dementia_Picks==last_diagnosis_date & dementia_subtype_1 != "05 Frontotemporal Dementia"  ~
+                       "05 Frontotemporal Dementia",
+                     minimum_date==last_diagnosis_date &   
+                       Dementia_alcohol==last_diagnosis_date & dementia_subtype_1 != "06 Alcohol-Related Cognitive Impairment"  ~
+                       "06 Alcohol-Related Cognitive Impairment",
+                     minimum_date==last_diagnosis_date &   
+                       Dementia_other_diseases==last_diagnosis_date & dementia_subtype_1 != "97 Other"  ~
+                       "97 Other", 
+                     T~NA))
+table(two$dementia_subtype_1, two$dementia_subtype_2, useNA="always")  
+
+three <- three %>%
+  rowwise() %>% 
+  mutate(last_diagnosis_date = 
+           max_(c(Unspecified_dementia, Dementia_Alzheimers, Vascular_dementia, Dementia_Lewy_body, 
+                  Dementia_Picks, Dementia_other_diseases, Dementia_alcohol))) %>% 
+  mutate(dementia_subtype_3 = 
+           case_when(minimum_date!=last_diagnosis_date & 
+                       Dementia_Alzheimers==Vascular_dementia & Vascular_dementia==last_diagnosis_date ~ "03 Alzheimer's/Vascular (Mixed)",
+                     minimum_date!=last_diagnosis_date & Vascular_dementia==last_diagnosis_date ~ "02 Vascular Dementia",
+                     minimum_date!=last_diagnosis_date & Dementia_Alzheimers==last_diagnosis_date ~ "01 Dementia in Alzheimer's Disease",
+                     minimum_date!=last_diagnosis_date & Dementia_Lewy_body==last_diagnosis_date ~ "04 Lewy Body Dementia",
+                     minimum_date!=last_diagnosis_date & Dementia_Picks==last_diagnosis_date ~ "05 Frontotemporal Dementia",
+                     minimum_date!=last_diagnosis_date & Dementia_alcohol==last_diagnosis_date ~"06 Alcohol-Related Cognitive Impairment",
+                     minimum_date!=last_diagnosis_date & Dementia_other_diseases==last_diagnosis_date ~"97 Other", 
+                     minimum_date!=last_diagnosis_date & Unspecified_dementia ==last_diagnosis_date ~ "07 yet to be determined",
+                     minimum_date==last_diagnosis_date &  
+                       Dementia_Alzheimers==last_diagnosis_date & dementia_subtype_1 != "01 Dementia in Alzheimer's Disease"  ~
+                       "01 Dementia in Alzheimer's Disease",
+                     minimum_date==last_diagnosis_date &  
+                       Vascular_dementia==last_diagnosis_date & dementia_subtype_1 != "02 Vascular Dementia"  ~
+                       "02 Vascular Dementia",
+                     minimum_date==last_diagnosis_date &   
+                       Dementia_Lewy_body==last_diagnosis_date & dementia_subtype_1 != "04 Lewy Body Dementia"  ~
+                       "04 Lewy Body Dementia",
+                     minimum_date==last_diagnosis_date &   
+                       Dementia_Picks==last_diagnosis_date & dementia_subtype_1 != "05 Frontotemporal Dementia"  ~
+                       "05 Frontotemporal Dementia",
+                     minimum_date==last_diagnosis_date &   
+                       Dementia_alcohol==last_diagnosis_date & dementia_subtype_1 != "06 Alcohol-Related Cognitive Impairment"  ~
+                       "06 Alcohol-Related Cognitive Impairment",
+                     minimum_date==last_diagnosis_date &   
+                       Dementia_other_diseases==last_diagnosis_date & dementia_subtype_1 != "97 Other"  ~
+                       "97 Other", 
+                     T~NA)) %>%
+  mutate(dementia_subtype_2 = case_when(flag_alz==1 & 
+                                          dementia_subtype_1 != "01 Dementia in Alzheimer's Disease"  &
+                                          dementia_subtype_3 != "01 Dementia in Alzheimer's Disease" ~"01 Dementia in Alzheimer's Disease",
+                                        flag_vasc ==1 & 
+                                          dementia_subtype_1 != "02 Vascular Dementia"  &
+                                          dementia_subtype_3 != "02 Vascular Dementia" ~"02 Vascular Dementia",
+                                        flag_lewy ==1 & 
+                                          dementia_subtype_1 != "04 Lewy Body Dementia"  &
+                                          dementia_subtype_3 != "04 Lewy Body Dementia" ~ "04 Lewy Body Dementia",
+                                        flag_pick ==1 & 
+                                          dementia_subtype_1 != "05 Frontotemporal Dementia"  &
+                                          dementia_subtype_3 != "05 Frontotemporal Dementia" ~"05 Frontotemporal Dementia",
+                                        flag_alcohol ==1 & 
+                                          dementia_subtype_1 != "06 Alcohol-Related Cognitive Impairment"  &
+                                          dementia_subtype_3 != "06 Alcohol-Related Cognitive Impairment" ~ "06 Alcohol-Related Cognitive Impairment",
+                                        flag_other_dis ==1 & 
+                                          dementia_subtype_1 != "97 Other"  &
+                                          dementia_subtype_3 != "97 Other" ~"97 Other",T~NA)) %>%
+  mutate(diagnosis_date_2 =case_when(flag_alz==1 & 
+                                       dementia_subtype_1 != "01 Dementia in Alzheimer's Disease"  &
+                                       dementia_subtype_3 != "01 Dementia in Alzheimer's Disease" ~ Dementia_Alzheimers, 
+                                     flag_vasc ==1 & 
+                                       dementia_subtype_1 != "02 Vascular Dementia"  &
+                                       dementia_subtype_3 != "02 Vascular Dementia" ~Vascular_dementia,
+                                     flag_lewy ==1 & 
+                                       dementia_subtype_1 != "04 Lewy Body Dementia"  &
+                                       dementia_subtype_3 != "04 Lewy Body Dementia" ~ Dementia_Lewy_body,
+                                     flag_pick ==1 & 
+                                       dementia_subtype_1 != "05 Frontotemporal Dementia"  &
+                                       dementia_subtype_3 != "05 Frontotemporal Dementia" ~Dementia_Picks,
+                                     flag_alcohol ==1 & 
+                                       dementia_subtype_1 != "06 Alcohol-Related Cognitive Impairment"  &
+                                       dementia_subtype_3 != "06 Alcohol-Related Cognitive Impairment" ~ Dementia_alcohol,
+                                     flag_other_dis ==1 & 
+                                       dementia_subtype_1 != "97 Other"  &
+                                       dementia_subtype_3 != "97 Other" ~ Unspecified_dementia,T~NA))
+
+table(three$dementia_subtype_1, three$dementia_subtype_2, three$dementia_subtype_3, useNA = "always")
 
 
+two <- two %>% 
+  select(upi_number, minimum_date, dementia_subtype_1, last_diagnosis_date, dementia_subtype_2) %>%
+  rename(diagnosis_date_1 = minimum_date, diagnosis_date_2 = last_diagnosis_date)
+
+
+three  <- three %>% 
+  select(upi_number, minimum_date, dementia_subtype_1,diagnosis_date_2, dementia_subtype_2,
+         last_diagnosis_date, dementia_subtype_3) %>%
+  rename(diagnosis_date_1 = minimum_date, diagnosis_date_3 = last_diagnosis_date)
+
+###bind together
+all_smr_diags <- bind_rows(one, two, three)
+#prefix names#
+all_smr_diags <-all_smr_diags %>%
+  rename_with(.cols = everything(), function(x){paste0("smr_", x)})
+
+saveRDS(all_smr_diags, "/PHI_conf/Dementia_Index/data/extracts/smr_diags_clean.rds")
+
+#save SMR diags file
+
+##Save smr demographics file
