@@ -2,7 +2,8 @@
 ##NRS extract 1
 ###Extract all deaths with a dementia flag
 cohort_start_date <- as.Date("2014-01-01")
-
+## run the setup file first#
+source("00.setup.r")
 ####################################################
 ##data extract####
 deaths_temp_1 <- as_tibble(
@@ -89,7 +90,7 @@ dementia_deaths  <-dementia_deaths  %>%
                                     T~0))
 table(dementia_deaths$flag_alzheimers, dementia_deaths$flag_G30_codes)
 ##none in combination so  ignore the g30 codes.
-dementia_deaths  <- dementia_deaths  %>%
+dementia_deaths <- dementia_deaths %>%
   mutate(dementia_alzheimers = case_when(substr(underlying_cause_of_death,1,3) =="F00"~1,
                                      substr(cause_of_death_code_0,1,3)  =="F00"~1,
                                      substr(cause_of_death_code_1,1,3)  =="F00"~1,
@@ -176,17 +177,67 @@ dementia_deaths  <- dementia_deaths  %>%
                                                            T~0), 
                     dementia_other_dis = case_when(dementia_picks==0 &
                                                      substr(underlying_cause_of_death,1,3) == "F02" ~1,
-                                                   substr(cause_of_death_code_0,1,3) == "F02" ~1,
-                                                   substr(cause_of_death_code_1,1,3) == "F02" ~1,
-                                                   substr(cause_of_death_code_2,1,3) == "F02" ~1,
-                                                   substr(cause_of_death_code_3,1,3) == "F02" ~1,
-                                                   substr(cause_of_death_code_4,1,3) == "F02" ~1,
-                                                   substr(cause_of_death_code_5,1,3) == "F02" ~1,
-                                                   substr(cause_of_death_code_6,1,3) == "F02" ~1,
-                                                   substr(cause_of_death_code_7,1,3) == "F02" ~1,
-                                                   substr(cause_of_death_code_8,1,3) == "F02" ~1,
-                                                   substr(cause_of_death_code_9,1,3) == "F02" ~1,
-                                                   T~0))
+                                                   dementia_picks==0 &substr(cause_of_death_code_0,1,3) == "F02" ~1,
+                                                   dementia_picks==0 & substr(cause_of_death_code_1,1,3) == "F02" ~1,
+                                                   dementia_picks==0 & substr(cause_of_death_code_2,1,3) == "F02" ~1,
+                                                   dementia_picks==0 &substr(cause_of_death_code_3,1,3) == "F02" ~1,
+                                                   dementia_picks==0 & substr(cause_of_death_code_4,1,3) == "F02" ~1,
+                                                   dementia_picks==0 &substr(cause_of_death_code_5,1,3) == "F02" ~1,
+                                                   dementia_picks==0 & substr(cause_of_death_code_6,1,3) == "F02" ~1,
+                                                   dementia_picks==0 & substr(cause_of_death_code_7,1,3) == "F02" ~1,
+                                                   dementia_picks==0 & substr(cause_of_death_code_8,1,3) == "F02" ~1,
+                                                   dementia_picks==0 & substr(cause_of_death_code_9,1,3) == "F02" ~1,
+                                                   T~0)) %>%
+  mutate(dementia_unspecified = case_when(
+    dementia_picks==0 & dementia_alzheimers==0 & vascular_dementia==0 &
+    underlying_cause_of_death == "F03"| underlying_cause_of_death %in% c("F03X", "F051") ~1,
+    dementia_picks==0 & dementia_alzheimers==0 & vascular_dementia==0 &
+      cause_of_death_code_0 == "F03" |cause_of_death_code_0 %in% c("F03X", "F051") ~1,
+    dementia_picks==0 & dementia_alzheimers==0 & vascular_dementia==0 &
+      cause_of_death_code_1 == "F03" |cause_of_death_code_1 %in% c("F03X", "F051") ~1,
+    dementia_picks==0 & dementia_alzheimers==0 & vascular_dementia==0 &
+      cause_of_death_code_2 == "F03" |cause_of_death_code_2 %in% c("F03X", "F051") ~1,
+    dementia_picks==0 & dementia_alzheimers==0 & vascular_dementia==0 &
+      cause_of_death_code_3 == "F03" |cause_of_death_code_3 %in% c("F03X", "F051") ~1,
+    dementia_picks==0 & dementia_alzheimers==0 & vascular_dementia==0 &
+      cause_of_death_code_4 == "F03" |cause_of_death_code_4 %in% c("F03X", "F051") ~1,
+    dementia_picks==0 & dementia_alzheimers==0 & vascular_dementia==0 &
+      cause_of_death_code_5 == "F03" |cause_of_death_code_5 %in% c("F03X", "F051") ~1,
+    dementia_picks==0 & dementia_alzheimers==0 & vascular_dementia==0 &
+      cause_of_death_code_6 == "F03" |cause_of_death_code_6 %in% c("F03X", "F051") ~1,
+    dementia_picks==0 & dementia_alzheimers==0 & vascular_dementia==0 &
+      cause_of_death_code_7 == "F03" |cause_of_death_code_7 %in% c("F03X", "F051") ~1,
+    dementia_picks==0 & dementia_alzheimers==0 & vascular_dementia==0 &
+      cause_of_death_code_8 == "F03" |cause_of_death_code_8 %in% c("F03X", "F051") ~1,
+    dementia_picks==0 & dementia_alzheimers==0 & vascular_dementia==0 &
+      cause_of_death_code_9 == "F03" |cause_of_death_code_9 %in% c("F03X", "F051") ~1,
+                                           T~0)) 
+dementia_deaths  <- dementia_deaths  %>% mutate(source = "NRSdeaths")
+dementia_deaths  <-dementia_deaths %>%  mutate(total_types = dementia_alzheimers+vascular_dementia + dementia_picks+
+                           dementia_other_dis+ dementia_unspecified)
+##SLim down to identifiers, and named diagnoses. just one date for this extract obv
+dementia_deaths  <- dementia_deaths  %>% 
+  mutate(dementia_subtype_1 = case_when(dementia_alzheimers==1 & vascular_dementia==1 ~ "03 Alzheimer's/Vascular (Mixed)",
+                                        vascular_dementia==1 ~ "02 Vascular Dementia",
+                                        dementia_alzheimers==1 ~ "01 Dementia in Alzheimer's Disease",
+                                        dementia_picks==1 ~ "05 Frontotemporal Dementia",
+                                        dementia_other_dis==1 ~ "97 Other", 
+                                        dementia_unspecified==1 ~ "07 yet to be determined", T~"Unknown")) %>% 
+  mutate(dementia_subtype_2 = case_when(dementia_subtype_1!="01 Dementia in Alzheimer's Disease" & 
+                                   dementia_subtype_1!="03 Alzheimer's/Vascular (Mixed)" & dementia_alzheimers==1  ~
+                                     "01 Dementia in Alzheimer's Disease",
+                                 dementia_subtype_1!="02 Vascular Dementia" & 
+                                   dementia_subtype_1!="03 Alzheimer's/Vascular (Mixed)" & vascular_dementia==1 ~ "02 Vascular Dementia",
+                                dementia_subtype_1!="05 Frontotemporal Dementia" & dementia_picks==1 ~ "05 Frontotemporal Dementia",
+                               dementia_subtype_1!="97 Other"& dementia_other_dis ~ "97 Other", T~NA
+                              ))
+
+table(dementia_deaths$dementia_subtype_1, dementia_deaths$dementia_subtype_2, useNA="always")
+##prefix names
+dementia_deaths <- dementia_deaths %>% 
+  select(upi_number, date_of_death, sex, postcode,institution,health_board_area,
+         dementia_subtype_1, dementia_subtype_2) %>% 
+  rename_with(.cols = everything(), function(x){paste0("NRSdeaths_", x)})
 
 ###save dementia deaths extract####
 saveRDS(dementia_deaths, paste0(folder_data_path, "/extracts/dementia_deaths.rds"))

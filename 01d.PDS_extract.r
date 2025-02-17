@@ -3,7 +3,7 @@
 ## minimal changes required as PDS is already fairly clean ##
 #############################################################
 ## run the setup file first#
-
+source("00.setup.r")
 ##get data
 pdsextract <- 
   readRDS("/PHI_conf/Dementia_Index/data/extracts/pds_dementia_index_extract-2024_25-Q2.rds")
@@ -17,6 +17,7 @@ table(check_chi$n)
 pdsextract  <-pdsextract   %>% filter(!is.na(chi_number))
 
 ###Remove placeholder postcodes
+#table(substr(pdsextract$postcode,1,2))
 pdsextract  <-pdsextract %>% mutate(postcode = case_when(postcode=="NK010AA"~NA , T~postcode))
 
 ###There are some NAs in the subtype field. Replace with 07 yet to be determined.
@@ -29,6 +30,11 @@ pdsextract  <-pdsextract %>% mutate(postcode = case_when(postcode=="NK010AA"~NA 
 pdsextract  <-pdsextract %>% 
   mutate(subtype_of_dementia = case_when(is.na(subtype_of_dementia) ~"07 Yet to be determined", 
                                          T~subtype_of_dementia))
-
+pdsextract  <-pdsextract %>% mutate(source= "PDS")
+names(pdsextract)
+pdsextract  <-pdsextract %>%
+  rename(diagnosis_date  =  dementia_diagnosis_confirmed_date,
+         dementia_subtype = subtype_of_dementia) %>%
+  rename_with(.cols = everything(), function(x){paste0("pds_", x)})
 
 saveRDS(pdsextract, "/PHI_conf/Dementia_Index/data/extracts/PDS_clean.rds")
