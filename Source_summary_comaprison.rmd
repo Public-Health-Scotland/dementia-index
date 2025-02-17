@@ -25,6 +25,7 @@ social_care <- readRDS("/PHI_conf/Dementia_Index/data/extracts/SC_clean.rds")
 
 ##this is just the last 2yrs for now
 pis <-readRDS( "/PHI_conf/Dementia_Index/data/extracts/pis_test.rds")
+
 ```
 
 ## Compare CHI vs PDS
@@ -94,6 +95,15 @@ SC_list <- SC_list %>%
   mutate(perc_smr_chi_in_pds = round(CHIinPDS1/(CHIinPDS1+CHIinPDS0)*100,1)) %>% mutate(source = "Social care")
 
 #
+
+##pis
+pis_chi <- pis %>% group_by(pis_pat_upi_c) %>% slice(1)
+
+#table(pis_chi$pis_pat_upi_c %in% PDS$pds_chi_number)
+##69% in PDS - so quite good but this is recent years only!
+
+
+#
 df <- rbind(chc_overall,chc_overall_md, overall_smr_chi, deaths_overall_chi,SC_list)
 df <- df %>% select(source, everything())
 ```
@@ -138,7 +148,17 @@ annualsmr_chi <- smr_chi_list %>%  group_by(inpds, year_diag) %>% count() %>%
               col.names = c("Year of admission", "N CHIs not in PDS", "N CHI in PDS", "% unique CHI in PDS"))
 ```
 
-## Missing dates in social care data
+## PDS CHI only in PDS
+
+```{r reverse_chi_compare,  echo=FALSE}
+#PDS_only <- PDS_chi_list %>% 
+#  filter(!pds_chi_number %in% smr_chi_list$smr_upi_number) %>%
+#  filter(!pds_chi_number %in% CHC$CHC_UPI_NUMBER) %>%
+#  filter(!pds_chi_number %in% pis_chi$pis_pat_upi_c) %>%
+#  filter(!pds_chi_number %in% SC_first$SC_chi) 
+
+
+```
 
 ## Summary of dementia types
 
@@ -180,19 +200,33 @@ totals <- totals %>% mutate(PDS =as.numeric(PDS),
                             NRSdeaths = as.numeric(NRSdeaths))
 
 df <- rbind(df , totals)
-knitr::kable(df %>% arrange(dementia_subtype))
+knitr::kable(df %>% arrange(dementia_subtype), caption = "Dementia subtype frequency in PDS, SMR records and NRS deaths")
 ```
 
 
 
 ### Care home census
+```{r chc_flags,  echo=FALSE}
+CHC_MD <- CHC %>% filter(CHC_dementia_subtype=="07 Yet to be determined")
+CHC_NMD <- CHC %>% filter(CHC_dementia_subtype=="99 Suspected dementia")
 
-% of persons were marked as medically diagnosed (they may have also been marked as NMD before or after the medical diagnosis)
+both <- CHC %>% filter(CHC_UPI_NUMBER %in% CHC_NMD$CHC_UPI_NUMBER & CHC_UPI_NUMBER %in% CHC_MD$CHC_UPI_NUMBER)
+n_nmd <-nrow(CHC_NMD)
+n_md <- length(unique(CHC_MD$CHC_UPI_NUMBER))
 
-% of persons were *only* marked as NMD dementia
+n_nmd_only <- n_nmd-nrow(both)
 
-### SMR hospital records
+chc_unique_chi <- length(unique(CHC$CHC_UPI_NUMBER))
 
-### Deaths
 
-### PDS
+perc_nmd_only <- round((n_nmd_only/chc_unique_chi)*100,1)
+perc_medic <- round(n_md/chc_unique_chi*100,1)
+```
+*add table of number with MD/NMD dementia*
+
+
+`r n_md` (`r perc_medic`%) of persons were marked as having medically diagnosed dementia (they may have also been marked as NMD before or after the medical diagnosis)
+
+`r n_nmd_only` (`r perc_nmd_only`%) people were *only* marked as NMD dementia
+
+
