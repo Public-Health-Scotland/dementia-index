@@ -1,0 +1,198 @@
+---
+title: "Source summary and comparisons"
+author: "Emily Moore"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(phsmethods)
+library(lubridate)
+library(tidyr)
+```
+
+```{r load_data, include=FALSE}
+
+smr_all<- readRDS("/PHI_conf/Dementia_Index/data/extracts/smr_diags_clean.rds") %>% 
+  mutate( source = "SMR")
+PDS <- readRDS("/PHI_conf/Dementia_Index/data/extracts/PDS_clean.rds") 
+dementia_deaths <- readRDS("/PHI_conf/Dementia_Index/data/extracts/dementia_deaths.rds")
+CHC <- readRDS("/PHI_conf/Dementia_Index/data/extracts/CHC_clean.rds")
+social_care <- readRDS("/PHI_conf/Dementia_Index/data/extracts/SC_clean.rds")
+
+##this is just the last 2yrs for now
+pis <-readRDS( "/PHI_conf/Dementia_Index/data/extracts/pis_test.rds")
+```
+
+## Compare CHI vs PDS
+
+
+Quite a large number of people that do not appear in PDS do appear in other sources.
+
+Care home census has the largest proportion of CHI not found in PDS, even if limited to those with medically diagnosed dementia. 
+
+
+```{r chi_compare, echo=FALSE}
+smr_chi_list <- smr_all %>% 
+  mutate(year_diag = year(smr_diagnosis_date_1)) %>%
+           group_by(smr_upi_number, year_diag) %>% slice(1) %>% ungroup() %>%
+  mutate(valid_chi = chi_check(smr_upi_number))
+
+PDS_chi_list <- PDS %>% group_by(pds_chi_number) %>% slice(1) %>%
+  mutate(inpds = 1)%>% select(inpds, pds_chi_number)
+##smrs  
+smr_chi_list <- smr_chi_list %>% left_join(PDS_chi_list, by=c("smr_upi_number" = "pds_chi_number")) %>%
+  mutate(inpds = case_when(is.na(inpds)~0, T~inpds)) 
+
+overall_smr_chi <- smr_chi_list %>% group_by(smr_upi_number) %>% slice(1) %>% 
+  ungroup() %>% group_by(inpds) %>%count() %>%
+  pivot_wider(names_from = inpds, values_from = n, names_prefix = "CHIinPDS") %>%
+  mutate(perc_smr_chi_in_pds = round(CHIinPDS1/(CHIinPDS1+CHIinPDS0)*100,1)) %>% mutate(source = "SMRA")
+###deaths
+deaths_chi <- dementia_deaths %>% select(NRSdeaths_upi_number, NRSdeaths_date_of_death) %>% 
+  left_join(PDS_chi_list, by = c("NRSdeaths_upi_number" = "pds_chi_number")) %>%
+  mutate(inpds = case_when(is.na(inpds)~0, T~inpds)) 
+
+deaths_overall_chi <- deaths_chi %>% group_by(inpds) %>% count() %>%
+   pivot_wider(names_from = inpds, values_from = n, names_prefix = "CHIinPDS") %>%
+  mutate(perc_smr_chi_in_pds = round(CHIinPDS1/(CHIinPDS1+CHIinPDS0)*100,1)) %>%
+  mutate(source = "NRS deaths")
+##chc
+chc_list <- CHC  %>% select(CHC_UPI_NUMBER, CHC_first_admission) %>% 
+  left_join(PDS_chi_list, by=c("CHC_UPI_NUMBER" = "pds_chi_number")) %>%
+  mutate(inpds = case_when(is.na(inpds)~0, T~inpds)) 
+chc_overall <- chc_list %>% 
+  group_by(CHC_UPI_NUMBER) %>% slice(1) %>% 
+  ungroup() %>% group_by(inpds) %>%count() %>%
+  pivot_wider(names_from = inpds, values_from = n, names_prefix = "CHIinPDS") %>%
+  mutate(perc_smr_chi_in_pds = round(CHIinPDS1/(CHIinPDS1+CHIinPDS0)*100,1)) %>% mutate(source = "Care Home Census")
+###CHC MD only
+chc_list_md <- CHC  %>% 
+  filter(CHC_dementia_subtype=="07 Yet to be determined") %>%
+    select(CHC_UPI_NUMBER, CHC_first_admission) %>% 
+  left_join(PDS_chi_list, by=c("CHC_UPI_NUMBER" = "pds_chi_number")) %>%
+  mutate(inpds = case_when(is.na(inpds)~0, T~inpds)) 
+chc_overall_md <- chc_list_md %>% 
+  group_by(CHC_UPI_NUMBER) %>% slice(1) %>% 
+  ungroup() %>% group_by(inpds) %>%count() %>%
+  pivot_wider(names_from = inpds, values_from = n, names_prefix = "CHIinPDS") %>%
+  mutate(perc_smr_chi_in_pds = round(CHIinPDS1/(CHIinPDS1+CHIinPDS0)*100,1)) %>% mutate(source = "Care Home Census - MD only")
+
+
+###SC
+
+SC_list <- social_care  %>% select(SC_grouping_chi, SC_diagnosis_date) %>% 
+  left_join(PDS_chi_list, by=c("SC_grouping_chi" = "pds_chi_number")) %>%
+  mutate(inpds = case_when(is.na(inpds)~0, T~inpds)) 
+SC_list <- SC_list %>% 
+  group_by(SC_grouping_chi) %>% slice(1) %>% 
+  ungroup() %>% group_by(inpds) %>%count() %>%
+  pivot_wider(names_from = inpds, values_from = n, names_prefix = "CHIinPDS") %>%
+  mutate(perc_smr_chi_in_pds = round(CHIinPDS1/(CHIinPDS1+CHIinPDS0)*100,1)) %>% mutate(source = "Social care")
+
+#
+df <- rbind(chc_overall,chc_overall_md, overall_smr_chi, deaths_overall_chi,SC_list)
+df <- df %>% select(source, everything())
+```
+
+```{r table1,  echo=FALSE}
+knitr::kable(df, caption = "Proportion of CHI in other datasets with dementia diagnosis that are found in PDS", 
+             col.names = c("data source", "N CHI in PDS", "N CHI not found in PDS", "% CHI in source also found in PDS"))
+```
+
+ 
+There are a higher proportion of CHI not in PDS in the earlier years of the data. 
+However, there is still quite a high proportion missing from PDS in other years. 
+
+Proportion not in PDS chi by year for SMR admissions. 
+
+```{r chi_compare_yr,  echo=FALSE}
+smr_chi_list <- smr_all %>% 
+  mutate(year_diag = year(smr_diagnosis_date_1)) %>%
+           group_by(smr_upi_number, year_diag) %>% slice(1) %>% ungroup() %>%
+  mutate(valid_chi = chi_check(smr_upi_number))
+
+PDS_chi_list <- PDS %>% group_by(pds_chi_number) %>% slice(1) %>%
+  mutate(inpds = 1)
+  
+smr_chi_list <- smr_chi_list %>% left_join(PDS_chi_list, by=c("smr_upi_number" = "pds_chi_number")) %>%
+  mutate(inpds = case_when(is.na(inpds)~0, T~inpds)) 
+
+overall_smr_chi <- smr_chi_list %>% group_by(smr_upi_number) %>% slice(1) %>% 
+  ungroup() %>% group_by(inpds) %>%count()
+
+annualsmr_chi <- smr_chi_list %>%  group_by(inpds, year_diag) %>% count() %>% 
+  pivot_wider(names_from = inpds, values_from = n, names_prefix = "In_PDS")
+ annualsmr_chi <- annualsmr_chi %>%
+   mutate(year_diag = case_when(year_diag < 2014 ~"before 2014", T~ as.character(year_diag))) %>% 
+   group_by(year_diag) %>% 
+   summarise(chi_not_in_pds =sum(In_PDS0), 
+             chi_in_pds = sum(In_PDS1)) %>%
+   mutate(perc_chi_in_pds = round(chi_in_pds/(chi_in_pds+chi_not_in_pds)*100,1) )
+ 
+ 
+ knitr::kable(annualsmr_chi, caption = "Number and proportion of unique CHI in SMR01,01-1E and 04 that are in PDS, by year", 
+              col.names = c("Year of admission", "N CHIs not in PDS", "N CHI in PDS", "% unique CHI in PDS"))
+```
+
+## Missing dates in social care data
+
+## Summary of dementia types
+
+PDS provides the most detail of dementia subtype, classifying dementia into 7 categories (including a category for those where the subtype has not been determined yet). The prescribing, care home and social care datasets only flag dementia, with no further detail. However the SMR sources and the NRS deaths use ICD10 codes and so can potentially provide more details on the subtype of dementia present. 
+
+
+
+```{r dem_types,  echo=FALSE}
+#PDS <- readRDS("/PHI_conf/Dementia_Index/data/extracts/PDS_clean.rds") 
+pds_types <- PDS %>% group_by(pds_dementia_subtype) %>%count() %>%
+  rename(PDS = n,dementia_subtype= pds_dementia_subtype)
+smr_types <- smr_all %>% group_by(smr_dementia_subtype_1) %>%count() %>%
+  mutate(smr_dementia_subtype_1 = 
+           case_when(smr_dementia_subtype_1=="07 yet to be determined"~ "07 Yet to be determined", 
+                     T~smr_dementia_subtype_1)) %>%
+  rename(first_SMRA_type = n,dementia_subtype = smr_dementia_subtype_1 ) 
+smr_types2 <- smr_all %>% group_by(smr_dementia_subtype_2) %>%count() %>%
+  filter(!is.na(smr_dementia_subtype_2)) %>%
+  rename(second_SMRA_type = n,dementia_subtype = smr_dementia_subtype_2 ) 
+
+
+death_types <- dementia_deaths %>%
+  group_by(NRSdeaths_dementia_subtype_1) %>% count() %>%
+   rename(NRSdeaths = n, dementia_subtype = NRSdeaths_dementia_subtype_1) %>%
+  mutate(dementia_subtype = 
+           case_when(dementia_subtype=="07 yet to be determined"~ "07 Yet to be determined", 
+                     T~dementia_subtype))
+
+df <- full_join( pds_types,smr_types)
+df <- full_join( df,smr_types2)
+df <- full_join(df, death_types)
+
+totals <- c("Total", colSums(df[2:5], na.rm=T))
+names(totals) <- names(df)
+totals <-(as.data.frame(t(totals)))
+totals <- totals %>% mutate(PDS =as.numeric(PDS), 
+                            first_SMRA_type = as.numeric(first_SMRA_type), 
+                            second_SMRA_type = as.numeric(second_SMRA_type), 
+                            NRSdeaths = as.numeric(NRSdeaths))
+
+df <- rbind(df , totals)
+knitr::kable(df %>% arrange(dementia_subtype))
+```
+
+
+
+### Care home census
+
+% of persons were marked as medically diagnosed (they may have also been marked as NMD before or after the medical diagnosis)
+
+% of persons were *only* marked as NMD dementia
+
+### SMR hospital records
+
+### Deaths
+
+### PDS
