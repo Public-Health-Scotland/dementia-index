@@ -1,7 +1,8 @@
 ###Extract from SMR01 and SMR01-1E
 ###uses ~4GB memory
 cohort_start_date <- as.Date("2014-01-01")
-
+## run the setup file first#
+source("00.setup.r")
 ##extract based on 2 character codes
 data_smr01_temp_1 <- as_tibble(
   dbGetQuery(
@@ -426,9 +427,15 @@ smr <- smr %>% mutate(dementia_subtype =  case_when(total_types==1 & flag_unspec
   rowwise() %>% 
   mutate(last_diagnosis_date =
            case_when(total_types >1 ~
-                       min_(c(Unspecified_dementia, Dementia_Alzheimers,
+                       max_(c(Unspecified_dementia, Dementia_Alzheimers,
                               Vascular_dementia, Dementia_Lewy_body, 
                               Dementia_Picks, Dementia_other_diseases, Dementia_alcohol)), T~NA)) %>% 
+  rowwise() %>%
+  mutate(minimum_date =
+           min_(c(Unspecified_dementia, Dementia_Alzheimers,
+                              Vascular_dementia, Dementia_Lewy_body, 
+                              Dementia_Picks, Dementia_other_diseases, Dementia_alcohol))) %>% 
+  ungroup() %>%
   mutate(dementia_subtype_1 = case_when(total_types==1 ~ dementia_subtype, 
                                         total_types> 1 & !is.na(Dementia_Alzheimers) & 
                                           !is.na(Vascular_dementia) &
@@ -578,5 +585,11 @@ all_smr_diags <-all_smr_diags %>%
 saveRDS(all_smr_diags, "/PHI_conf/Dementia_Index/data/extracts/smr_diags_clean.rds")
 
 #save SMR diags file
-
+names(smr_raw)
 ##Save smr demographics file
+smr_demogs <- smr_raw %>% filter(upi_number %in% all_smr_diags$smr_upi_number) %>%
+  select(upi_number, admission_date, discharge_date, cis_marker, gls_cis_marker, hbtreat_currentdate, 
+         location, dob, ethnic_group, dr_postcode, postcode)
+saveRDS(smr_demogs, "/PHI_conf/Dementia_Index/data/extracts/smr_demogs.rds")
+
+#
