@@ -113,13 +113,18 @@ knitr::kable(df, caption = "Proportion of CHI in other datasets with dementia di
              col.names = c("data source", "N CHI in PDS", "N CHI not found in PDS", "% CHI in source also found in PDS"))
 ```
 
- 
-There are a higher proportion of CHI not in PDS in the earlier years of the data. 
-However, there is still quite a high proportion missing from PDS in other years. 
 
-Proportion not in PDS chi by year for SMR admissions. 
+## Compare CHI vs PDS - Time trends
 
-```{r chi_compare_yr,  echo=FALSE}
+There are a higher proportion of CHI found not in PDS but found in other sources in the earlier years of the data. However, there is still quite a high proportion missing from PDS in other years. The year is the year the person is first foud in the other data source, the CHI is searched for in all years of PDS, it does not have to be in the same year as the other source record.
+
+
+
+### SMR CHI not in PDS by year
+
+For admissions before 2017, a very low proportion of CHI in SMR sources are found in PDS. The proportion increases to 22% in 2017 and steadily increases after that, reaching 60% in 2024. 
+
+```{r chi_compare_yr_smr,  echo=FALSE}
 smr_chi_list <- smr_all %>% 
   mutate(year_diag = year(smr_diagnosis_date_1)) %>%
            group_by(smr_upi_number, year_diag) %>% slice(1) %>% ungroup() %>%
@@ -148,9 +153,58 @@ annualsmr_chi <- smr_chi_list %>%  group_by(inpds, year_diag) %>% count() %>%
               col.names = c("Year of admission", "N CHIs not in PDS", "N CHI in PDS", "% unique CHI in PDS"))
 ```
 
-## PDS CHI only in PDS
+### Social care CHI not in PDS by year
+
+Social care data also shows an increasing proportion of captured in PDS more recently. Note that the earliest quarter we have data for is 2017/18 Q4, so many people flagged in 2018 will have been diagnosed long before this, and recieving social care before this. This explains both the very high numbers first found in 2018 and the much lower proportion of those CHI found in PDS.
+
+```{r chi_compare_yr_SC,  echo=FALSE}
+SC_list <- social_care  %>% select(SC_grouping_chi, SC_diagnosis_date) %>% 
+  left_join(PDS_chi_list, by=c("SC_grouping_chi" = "pds_chi_number")) %>%
+  mutate(inpds = case_when(is.na(inpds)~0, T~inpds)) %>%
+  mutate(year_diag = year(SC_diagnosis_date))
+
+annual_SC_chi <-SC_list %>%  group_by(inpds, year_diag) %>% count() %>% 
+  pivot_wider(names_from = inpds, values_from = n, names_prefix = "In_PDS")
+annual_SC_chi <- annual_SC_chi %>%
+   mutate(perc_chi_in_pds = round(In_PDS1/(In_PDS0+In_PDS1)*100,1) )
+ 
+
+ knitr::kable(annual_SC_chi, caption = "Number and proportion of unique CHI in Social care data that are in PDS, by year of first record in social care", 
+              col.names = c("Year dementia first recorded", "N CHIs not in PDS", "N CHI in PDS", "% unique CHI in PDS"))
+```
+### Care home census CHI not in PDS by year
+
+Social care data also shows an increasing proportion of captured in PDS more recently. Note that the earliest quarter we have data for is 2017/18 Q4, so many people flagged in 2018 will have been diagnosed long before this, and recieving social care before this. This explains both the very high numbers first found in 2018 and the much lower proportion of those CHI found in PDS.
+
+```{r chi_compare_yr_CHC,  echo=FALSE}
+##chc
+chc_list <- CHC  %>% mutate(year_admit = year(CHC_first_admission)) %>%
+  filter(year_admit >=1990) %>%
+  select(CHC_UPI_NUMBER, CHC_first_admission) %>% 
+  left_join(PDS_chi_list, by=c("CHC_UPI_NUMBER" = "pds_chi_number")) %>%
+  mutate(inpds = case_when(is.na(inpds)~0, T~inpds)) 
+
+chc_annual <- chc_list %>% 
+  group_by(CHC_UPI_NUMBER) %>% slice(1) %>% ungroup() %>%
+  mutate(year_diag = year(CHC_first_admission)) %>%
+  mutate(year_diag = case_when(year_diag <= 2014 ~"before 2014", T~as.character(year_diag)))%>%
+    ungroup() %>% 
+  group_by(inpds, year_diag) %>% count() %>% 
+  pivot_wider(names_from = inpds, values_from = n, names_prefix = "In_PDS") 
+chc_annual <- chc_annual%>%
+   mutate(perc_chi_in_pds = round(In_PDS1/(In_PDS0+In_PDS1)*100,1) )
+
+
+
+ knitr::kable(chc_annual, caption = "Number and proportion of unique CHI in Care Home Census data that are in PDS, by year first admission to carehome", 
+              col.names = c("Year admission of stay recording dementia", "N CHIs not in PDS", "N CHI in PDS", "% unique CHI in PDS"))
+```
+
+
+
 
 ```{r reverse_chi_compare,  echo=FALSE}
+## PDS CHI only in PDS
 #PDS_only <- PDS_chi_list %>% 
 #  filter(!pds_chi_number %in% smr_chi_list$smr_upi_number) %>%
 #  filter(!pds_chi_number %in% CHC$CHC_UPI_NUMBER) %>%
