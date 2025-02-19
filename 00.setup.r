@@ -7,12 +7,17 @@ library(odbc)
 library(tidyverse)
 library(janitor)
 library(hablar)
+library(readxl)
+library(arrow)
+library(odbc)
 
 folder_data_path <- "/PHI_conf/Dementia_Index/data"
 
 # connect to SMRA####
-
-
+#using keyring
+##this will only work if you have keyring setup for SMRA
+# and have the password to the keyring (NOT your smra password)
+# saved in the file "~/database_keyring.R"
 keyring::keyring_unlock(keyring = "DATABASE",
                         password = source("~/database_keyring.R")[["value"]])
 
@@ -27,14 +32,15 @@ SMRAConnection <- dbConnect(odbc(),
 icd10_dementia <- c("F00", "F000", "F001", "F002", "F009",
                     "F01","F010", "F011", "F012",  "F013","F018","F019",
                     "F02","F020", "F021", "F022",  "F023", "F024","F028",
-                    "F03",
-                    "F051", 
-                    "G318 D","F028 A", "F1073",  "F1173",  "F1273",  "F1373",  "F1473",  "F1573",  "F1673",  "F1773", "F1873",  "F1973")
+                    "F03", "F051","G318 D","F028 A", "F1073",  "F1173",  
+                    "F1273",  "F1373",  "F1473",  "F1573",  "F1673",  "F1773", "F1873",  "F1973")
 dagger_code <- c("G30", "G301", "G308", "G309")
-fifth_char_codes <- c("G318 D","F028 A", "F1073",  "F1173",  "F1273",  "F1373",  "F1473",  "F1573",  "F1673",  "F1773", "F1873",  "F1973"  )
+fifth_char_codes <- c("G318 D","F028 A", "F1073",  "F1173",  "F1273",  "F1373",  
+                      "F1473",  "F1573",  "F1673",  "F1773", "F1873",  "F1973"  )
 alcohol_code <-"F1073"
 ##dementia due to substaces other than alcohol.
-substance_codes <- c(  "F1173",  "F1273",  "F1373",  "F1473",  "F1573",  "F1673",  "F1773", "F1873",  "F1973"  )
+substance_codes <- c(  "F1173",  "F1273",  "F1373",  "F1473",  "F1573",  "F1673", 
+                       "F1773", "F1873",  "F1973"  )
 
 ##To id type
 dementia_unspecified <- c("F03X", "F051")
@@ -48,6 +54,12 @@ dementia_cjd <- "F021"
 dementia_hunting <- "F022"
 dementia_parkinson <- "F023"
 dementia_hiv <- "F024"
-
-
 bnf <- "0411"
+
+##functions####
+
+clear_temp_tables <- function(conn){
+  # clears old dbplyr tables off the SQL database where possible
+  tables <- odbc::dbListTables(conn)
+  for(table in tables[str_sub(tables, 1, 7) == "dbplyr_"]){try(odbc::dbRemoveTable(conn, table), silent = TRUE)}
+}
