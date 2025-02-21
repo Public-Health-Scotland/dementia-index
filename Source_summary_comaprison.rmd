@@ -24,7 +24,7 @@ CHC <- readRDS("/PHI_conf/Dementia_Index/data/extracts/CHC_clean.rds")
 social_care <- readRDS("/PHI_conf/Dementia_Index/data/extracts/SC_clean.rds")
 
 ##this is just the last 2yrs for now
-pis <-readRDS( "/PHI_conf/Dementia_Index/data/extracts/pis_test.rds")
+pis <-readRDS( "/PHI_conf/Dementia_Index/data/extracts/pis_clean.rds")
 
 ```
 
@@ -97,14 +97,21 @@ SC_list <- SC_list %>%
 #
 
 ##pis
-pis_chi <- pis %>% group_by(pis_pat_upi_c) %>% slice(1)
-
+pis_chi <- pis %>% group_by(pis_pat_upi_c) %>% slice(1) %>%
+  ungroup() %>%
+  left_join(PDS_chi_list, by=c("pis_pat_upi_c" = "pds_chi_number")) %>%
+  mutate(inpds = case_when(is.na(inpds)~0, T~inpds)) 
+pis_overall <-pis_chi %>% 
+  group_by(pis_pat_upi_c) %>% slice(1) %>% 
+  ungroup() %>% group_by(inpds) %>%count() %>%
+  pivot_wider(names_from = inpds, values_from = n, names_prefix = "CHIinPDS") %>%
+  mutate(perc_smr_chi_in_pds = round(CHIinPDS1/(CHIinPDS1+CHIinPDS0)*100,1)) %>% mutate(source = "PIS")
 #table(pis_chi$pis_pat_upi_c %in% PDS$pds_chi_number)
 ##69% in PDS - so quite good but this is recent years only!
 
 
 #
-df <- rbind(chc_overall,chc_overall_md, overall_smr_chi, deaths_overall_chi,SC_list)
+df <- rbind(chc_overall,chc_overall_md, overall_smr_chi, deaths_overall_chi,SC_list, pis_overall)
 df <- df %>% select(source, everything())
 ```
 
@@ -200,7 +207,35 @@ chc_annual <- chc_annual%>%
               col.names = c("Year admission of stay recording dementia", "N CHIs not in PDS", "N CHI in PDS", "% unique CHI in PDS"))
 ```
 
+### PIS CHI by year
 
+THe PIS data appears to have good capture from 2017, and little before then. FOr this rason, most people in the dataset have thier "first" prescription recorded in 2017. From 2018 onward over 70% of the chi in PIS also appear in PDS. 
+
+
+```{r chi_compare_yr_pis,  echo=FALSE}
+##chc
+pis_list <- pis  %>% mutate(year_presc = year(pis_presc_date)) %>%
+  filter(year_presc >=1990) %>%
+  select(pis_pat_upi_c, year_presc ) %>% 
+  left_join(PDS_chi_list, by=c("pis_pat_upi_c" = "pds_chi_number")) %>%
+  mutate(inpds = case_when(is.na(inpds)~0, T~inpds)) 
+
+pis_annual <- pis_list %>% 
+  group_by(pis_pat_upi_c) %>% slice(1) %>% ungroup() %>%
+  mutate(year_diag = year_presc) %>%
+#  mutate(year_diag = case_when(year_diag <= 2014 ~"before 2014", T~as.character(year_diag)))%>%
+    ungroup() %>% 
+  group_by(inpds, year_diag) %>% count() %>% 
+  filter(year_diag >=2016) %>%
+  pivot_wider(names_from = inpds, values_from = n, names_prefix = "In_PDS") 
+pis_annual <- pis_annual%>%
+   mutate(perc_chi_in_pds = round(In_PDS1/(In_PDS0+In_PDS1)*100,1) )
+
+
+
+ knitr::kable(pis_annual, caption = "Number and proportion of unique CHI in PIS data that are in PDS, by year of first prescription from BNF 4.11", 
+              col.names = c("Year of first prescribing", "N CHIs not in PDS", "N CHI in PDS", "% unique CHI in PDS"))
+```
 
 
 ```{r reverse_chi_compare,  echo=FALSE}
