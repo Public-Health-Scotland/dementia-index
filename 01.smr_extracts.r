@@ -3,7 +3,7 @@
 cohort_start_date <- as.Date("2014-01-01")
 ## run the setup file first#
 source("00.setup.r")
-##extract based on 2 character codes
+##extract based on 2 character codes####
 data_smr01_temp_1 <- as_tibble(
   dbGetQuery(
     SMRAConnection, paste0(
@@ -37,7 +37,8 @@ data_smr01_temp_1 <- as_tibble(
   mutate(discharge_date = max(discharge_date)) %>%
   ungroup() %>%
   mutate(upi_number = case_when(is.na(upi_number) ~ci_chi_number, T~upi_number)) %>%
-  filter(!is.na(upi_number))
+  filter(!is.na(upi_number)) %>%
+  mutate(source="SMR01")
 
 ###SMR01e
 data_smr01_1e_temp_1 <- as_tibble(
@@ -68,13 +69,15 @@ data_smr01_1e_temp_1 <- as_tibble(
   )
 ) %>%
   clean_names() %>%
-  group_by(link_no, cis_marker) %>%
-  mutate(admission_date = min(admission_date)) %>%
-  mutate(discharge_date = max(discharge_date)) %>%
+  group_by(link_no, cis_marker) %>% # dont group up 1E as vv long stays
+  mutate(cis_admission_date = min(admission_date)) %>%
+  mutate(cis_discharge_date = max(discharge_date)) %>%
   ungroup()  %>%
   mutate(upi_number = case_when(is.na(upi_number) ~ci_chi_number, T~upi_number))%>%
-  filter(!is.na(upi_number))
+  filter(!is.na(upi_number))%>%
+  mutate(source="SMR01-1E")
 
+#smr04####
 data_smr04 <- as_tibble(
   dbGetQuery(
     SMRAConnection, paste0(
@@ -85,7 +88,7 @@ data_smr04 <- as_tibble(
     OTHER_CONDITION_2,OTHER_CONDITION_3,
     OTHER_CONDITION_4,OTHER_CONDITION_5,
     HBRES_CURRENTDATE, DOB, ETHNIC_GROUP, DR_POSTCODE, POSTCODE
-    FROM ANALYSIS.SMR01_1E_PI SMR
+    FROM ANALYSIS.SMR04_PI SMR
     WHERE SMR.DISCHARGE_DATE >= TO_DATE('", cohort_start_date, "', 'yyyy-mm-dd')
       AND (SUBSTR(MAIN_CONDITION, 1, 2) = 'F0' 
     OR SUBSTR(OTHER_CONDITION_1, 1, 2) = 'F0' 
@@ -108,8 +111,10 @@ data_smr04 <- as_tibble(
   mutate(discharge_date = max(discharge_date)) %>%
   ungroup()  %>%
   mutate(upi_number = case_when(is.na(upi_number) ~ci_chi_number, T~upi_number))%>%
-  filter(!is.na(upi_number))
+  filter(!is.na(upi_number))%>%
+  mutate(source="SMR04")
 
+##smr04 5th character codes in F1 groups
 data_smr04_sub <- as_tibble(
   dbGetQuery(
     SMRAConnection, paste0(
@@ -120,7 +125,7 @@ data_smr04_sub <- as_tibble(
     OTHER_CONDITION_2,OTHER_CONDITION_3,
     OTHER_CONDITION_4,OTHER_CONDITION_5,
     HBRES_CURRENTDATE, DOB, ETHNIC_GROUP, DR_POSTCODE, POSTCODE
-    FROM ANALYSIS.SMR01_1E_PI SMR
+    FROM ANALYSIS.SMR04_PI SMR
     WHERE SMR.DISCHARGE_DATE >= TO_DATE('", cohort_start_date, "', 'yyyy-mm-dd')
     AND  (SUBSTR(MAIN_CONDITION, 1, 2) = 'F1' 
     OR SUBSTR(OTHER_CONDITION_1, 1, 2) = 'F1' 
@@ -137,7 +142,8 @@ data_smr04_sub <- as_tibble(
   mutate(discharge_date = max(discharge_date)) %>%
   ungroup() %>%
   mutate(upi_number = case_when(is.na(upi_number) ~ci_chi_number, T~upi_number)) %>%
-  filter(!is.na(upi_number))
+  filter(!is.na(upi_number))%>%
+  mutate(source="SMR04")
 
 ##filter to exact codes that we need. 
 smr <- bind_rows(data_smr01_1e_temp_1, data_smr01_temp_1, data_smr04, data_smr04_sub)
@@ -163,6 +169,7 @@ smr <- smr %>%
                                    substr(other_condition_4,1,4) %in% icd10_dementia ~1,
                                    substr(other_condition_5,1,4) %in% icd10_dementia ~1, 
                                    T~0)) %>%
+  ##flag combined alzheirmer codes
   mutate(flag_G30_codes = case_when(substr(main_condition,1,3) =="G30"~1,
                                     substr(other_condition_1,1,3) =="G30"~1,
                                     substr(other_condition_2,1,3) =="G30"~1,
@@ -176,7 +183,77 @@ smr <- smr %>%
                                      substr(other_condition_3,1,3)  =="F00"~1,
                                      substr(other_condition_4,1,3)  =="F00"~1,
                                      substr(other_condition_5,1,3)  =="F00"~1,
-                                     T~0))
+                                     T~0)) %>%
+  mutate(f_code =  case_when(substr(main_condition,1,3) =="F00"~main_condition,
+                             substr(other_condition_1,1,3)  =="F00"~other_condition_1,
+                             substr(other_condition_2,1,3)  =="F00"~other_condition_2,
+                             substr(other_condition_3,1,3)  =="F00"~other_condition_3,
+                             substr(other_condition_4,1,3)  =="F00"~other_condition_4,
+                             substr(other_condition_5,1,3)  =="F00"~other_condition_5,
+                             T~"NA")) %>%
+  mutate(g_code = case_when(substr(main_condition,1,3) =="G30"~main_condition,
+                            substr(other_condition_1,1,3) =="G30"~other_condition_1,
+                            substr(other_condition_2,1,3) =="G30"~other_condition_2,
+                            substr(other_condition_3,1,3) =="G30"~other_condition_3,
+                            substr(other_condition_4,1,3) =="G30"~other_condition_4,
+                            substr(other_condition_5,1,3) =="G30"~other_condition_5, 
+                            T~"NA")) %>%
+  ##flag lewy codes
+  mutate(lewy_f = case_when(main_condition =="F028 A"  ~main_condition, 
+                            other_condition_1 =="F028 A" ~other_condition_1,
+                            other_condition_2 =="F028 A" ~other_condition_2,
+                            other_condition_3 =="F028 A" ~other_condition_3,
+                            other_condition_4 =="F028 A" ~other_condition_4,
+                            other_condition_5 =="F028 A" ~other_condition_5), 
+lewy_g = case_when(main_condition =="G318 D" ~main_condition, 
+                   other_condition_1 =="G318 D" ~other_condition_1,
+                   other_condition_2 =="G318 D" ~other_condition_2,
+                   other_condition_3 =="G318 D" ~other_condition_3,
+                   other_condition_4 =="G318 D" ~other_condition_4,
+                   other_condition_5 =="G318 D" ~other_condition_5)) %>%
+    mutate(other_condition_6 = case_when(flag_alzheimers==1 & flag_G30_codes==1 ~paste0(f_code," ", g_code),
+                                       (!is.na(lewy_f) & !is.na(lewy_g) ~ paste0(lewy_f," ", lewy_g))))  %>%
+  ##remove indv diags when part of a combined code
+  mutate(main_condition = case_when((!is.na(f_code) & !is.na(g_code)) & 
+                                      (main_condition==f_code | main_condition==g_code) ~NA,
+                                    T~main_condition), 
+         other_condition_1= case_when((!is.na(f_code) & !is.na(g_code)) &
+                                        (other_condition_1==f_code | other_condition_1==g_code) ~NA,
+                                      T~other_condition_1),
+         other_condition_2= case_when((!is.na(f_code) & !is.na(g_code)) &
+                                        (other_condition_2==f_code | other_condition_2==g_code) ~NA,
+                                      T~other_condition_2),
+         other_condition_3= case_when((!is.na(f_code) & !is.na(g_code)) &
+                                        (other_condition_3==f_code | other_condition_3==g_code) ~NA,
+                                      T~other_condition_3), 
+         other_condition_4= case_when((!is.na(f_code) & !is.na(g_code)) &
+                                        (other_condition_4==f_code | other_condition_4==g_code) ~NA,
+                                      T~other_condition_4), 
+         other_condition_5= case_when((!is.na(f_code) & !is.na(g_code)) &
+                                        (other_condition_5==f_code | other_condition_5==g_code) ~NA,
+                                      T~other_condition_5) 
+         ) %>%
+#  select(-c(f_code, g_code)) %>%
+  mutate(main_condition = case_when((!is.na(lewy_f) & is.na(lewy_g)) & 
+                                      (main_condition==lewy_f| main_condition==lewy_g) ~NA,
+                                    T~main_condition), 
+         other_condition_1= case_when((!is.na(lewy_f) & !is.na(lewy_g)) & 
+                                        (other_condition_1==lewy_f | other_condition_1==lewy_g) ~NA,
+                                      T~other_condition_1),
+         other_condition_2= case_when((!is.na(lewy_f) & !is.na(lewy_g)) & 
+                                        (other_condition_2== lewy_f | other_condition_2==lewy_g) ~NA,
+                                      T~other_condition_2),
+         other_condition_3= case_when((!is.na(lewy_f) & !is.na(lewy_g)) & 
+                                        (other_condition_3== lewy_f | other_condition_3==lewy_g) ~NA,
+                                      T~other_condition_3), 
+         other_condition_4= case_when((!is.na(lewy_f) & !is.na(lewy_g)) & 
+                                        (other_condition_4== lewy_f | other_condition_4==lewy_g) ~NA,
+                                      T~other_condition_4), 
+         other_condition_5= case_when((!is.na(lewy_f) & !is.na(lewy_g)) & 
+                                        (other_condition_5== lewy_f | other_condition_5==lewy_g) ~NA,
+                                      T~other_condition_5) ) #%>%
+ # select(-c(lewy_f, lewy_g))
+
 
 table(smr$flag_G30_codes, smr$flag_alzheimers)
 
@@ -187,20 +264,25 @@ smr <- smr %>% filter(flag_dementia==1) %>% mutate()
 ##summarise but dont lose type of dementia
 smr <- smr %>%
   group_by(upi_number, cis_marker,gls_cis_marker) %>%
-  mutate( admission_date = min(admission_date), 
-          discharge_date = max(discharge_date),
-          postcode = first_(postcode), 
+  mutate( postcode = first_(postcode), 
           location = first_(location), 
           hbtreat_currentdate = first_(hbtreat_currentdate), 
           hbres_currentdate = first_(hbres_currentdate)) %>% ungroup
 ##temporary save 
 saveRDS(smr, paste0(folder_data_path, "/extracts/temp_smr_raw.rds"))
+
+###Grouping for Dementia group analysis ####
 smr_raw <- readRDS(paste0(folder_data_path, "/extracts/temp_smr_raw.rds"))
 ##long smr extract
 smr_long <- smr_raw  %>% ungroup %>%
+  select(upi_number, ci_chi_number, link_no, cis_marker, gls_cis_marker, 
+         admission_date, discharge_date, main_condition, other_condition_1, 
+         other_condition_2, other_condition_3, other_condition_4,
+         other_condition_5, other_condition_6, everything()) %>%
+  select(-c(f_code, g_code, lewy_f, lewy_g)) %>%
   pivot_longer(names_to = "diagnosis position", 
-               cols = main_condition:other_condition_5, values_to = "diagnosis") %>%
-  filter(!is.na(diagnosis))
+               cols = main_condition:other_condition_6, values_to = "diagnosis") %>%
+  filter(!is.na(diagnosis)) 
 
 ##flag dementia types
 smr_long <- smr_long %>%
@@ -212,8 +294,7 @@ smr_long <- smr_long %>%
                                     substr(diagnosis,1,4) %in% alzheimer_codes ~1,
                                     T~0)) %>%
   mutate(dementia_alcohol = case_when(diagnosis =="F1073" ~1, T~0),
-         lewy_f = case_when(diagnosis =="F028 A"  ~1, T~0), 
-         lewy_g = case_when(diagnosis =="G318 D" ~1, T~0),
+         lewy_body = case_when(diagnosis =="F028 A G318 D"  ~1, T~0), 
          vascular_dementia = case_when(substr(diagnosis ,1,3)=="F01" ~1,
                                        T~0), 
          dementia_other_dis = case_when(substr(diagnosis,1,3) == "F02" ~1,T~0), 
@@ -230,7 +311,8 @@ smr_long <- smr_long %>%
          dementia_other_substances =
            case_when(substr(diagnosis,1,5) %in% substance_codes~1, 
                      T~0)) %>%
-  filter(flag_dementia==1| lewy_g==1)
+  filter(flag_dementia==1| lewy_body==1) %>%
+  unique()
 
 ##aggregate on upi and date 
 
@@ -241,8 +323,7 @@ smr_agg <- smr_long %>%
            dr_postcode, postcode) %>%
   summarise(flag_dementia= max(flag_dementia), 
             alzheimer_flag = max(alzheimer_flag), 
-            lewy_f = max_(lewy_f), 
-            lewy_g = max_(lewy_g), 
+            dementia_lewy_body = max_(lewy_body), 
             dementia_alcohol = max_(dementia_alcohol),
             vascular_dementia = max_(vascular_dementia), 
             dementia_other_dis = max_(dementia_other_dis), 
@@ -252,9 +333,7 @@ smr_agg <- smr_long %>%
             dementia_park = max_(dementia_park), 
             dementia_hiv = max_(dementia_hiv)) %>%
   ungroup() %>%
-  mutate(dementia_lewy_body = case_when(lewy_f==1 & lewy_g==1 ~1, T~0)) %>%
-  mutate(dementia_other_dis = case_when(dementia_lewy_body==1 ~0, T~dementia_other_dis))%>%
-  select(-lewy_f, lewy_g)
+  mutate(dementia_other_dis = case_when(dementia_lewy_body==1 ~0, T~dementia_other_dis))
 #select first date for each dementia type.     
 
 first_dementia_unspec <-smr_agg %>%
@@ -433,8 +512,8 @@ smr <- smr %>% mutate(dementia_subtype =  case_when(total_types==1 & flag_unspec
   rowwise() %>%
   mutate(minimum_date =
            min_(c(Unspecified_dementia, Dementia_Alzheimers,
-                              Vascular_dementia, Dementia_Lewy_body, 
-                              Dementia_Picks, Dementia_other_diseases, Dementia_alcohol))) %>% 
+                  Vascular_dementia, Dementia_Lewy_body, 
+                  Dementia_Picks, Dementia_other_diseases, Dementia_alcohol))) %>% 
   ungroup() %>%
   mutate(dementia_subtype_1 = case_when(total_types==1 ~ dementia_subtype, 
                                         total_types> 1 & !is.na(Dementia_Alzheimers) & 
@@ -582,7 +661,7 @@ all_smr_diags <- bind_rows(one, two, three)
 all_smr_diags <-all_smr_diags %>%
   rename_with(.cols = everything(), function(x){paste0("smr_", x)})
 
-saveRDS(all_smr_diags, "/PHI_conf/Dementia_Index/data/extracts/smr_diags_clean.rds")
+saveRDS(all_smr_diags, "/PHI_conf/Dementia_Index/data/extracts/smr_diags_grouped.rds")
 
 #save SMR diags file
 names(smr_raw)
@@ -592,4 +671,61 @@ smr_demogs <- smr_raw %>% filter(upi_number %in% all_smr_diags$smr_upi_number) %
          location, dob, ethnic_group, dr_postcode, postcode)
 saveRDS(smr_demogs, "/PHI_conf/Dementia_Index/data/extracts/smr_demogs.rds")
 
-#
+### First diag retaining ICD10 codes####
+smr_raw <- readRDS(paste0(folder_data_path, "/extracts/temp_smr_raw.rds"))
+
+smr_raw <- readRDS(paste0(folder_data_path, "/extracts/temp_smr_raw.rds"))
+##long smr extract
+smr_long <- smr_raw  %>% ungroup %>%
+  select(upi_number, ci_chi_number, link_no, cis_marker, gls_cis_marker, 
+         admission_date, discharge_date, main_condition, other_condition_1, 
+         other_condition_2, other_condition_3, other_condition_4,
+         other_condition_5, other_condition_6, everything()) %>%
+  select(-c(f_code, g_code, lewy_f, lewy_g)) %>%
+  pivot_longer(names_to = "diagnosis position", 
+               cols = main_condition:other_condition_6, values_to = "diagnosis") %>%
+  filter(!is.na(diagnosis)) 
+
+##flag dementia types
+smr_long <- smr_long %>%
+  ##start with the specific
+  mutate(flag_dementia = case_when(substr(diagnosis,1,3) %in% icd10_dementia ~1,
+                                   substr(diagnosis,1,4) %in% icd10_dementia ~1,
+                                   T~0),
+         alzheimer_flag = case_when(substr(diagnosis,1,3) %in% alzheimer_codes ~1,
+                                    substr(diagnosis,1,4) %in% alzheimer_codes ~1,
+                                    T~0)) %>%
+  mutate(dementia_alcohol = case_when(diagnosis =="F1073" ~1, T~0),
+         lewy_body = case_when(diagnosis =="F028 A G318 D"  ~1, T~0), 
+         vascular_dementia = case_when(substr(diagnosis ,1,3)=="F01" ~1,
+                                       T~0), 
+         dementia_other_dis = case_when(substr(diagnosis,1,3) == "F02" ~1,T~0), 
+         dementia_picks = case_when(substr(diagnosis,1,4) =="F020" ~1,
+                                    T~0),
+         dementia_cjd = case_when(substr(diagnosis,1,4) =="F021" ~1,
+                                  T~0) ,
+         dementia_hunting = case_when(   substr(diagnosis,1,4) =="F022" ~1,
+                                         T~0) ,
+         dementia_park = case_when(substr(diagnosis,1,4) =="F023" ~1,
+                                   T~0) ,
+         dementia_hiv = case_when(substr(diagnosis,1,4) =="F024" ~1,
+                                  T~0), 
+         dementia_other_substances =
+           case_when(substr(diagnosis,1,5) %in% substance_codes~1, 
+                     T~0)) %>%
+  filter(flag_dementia==1| lewy_body==1) %>%
+  unique()
+
+##first of each icd10 code
+
+smr_grp <- smr_long %>% 
+  arrange(upi_number, admission_date, source) %>%
+  group_by(upi_number, source, diagnosis) %>%
+  summarise(admission_date=min_(admission_date), 
+            dob= first(dob), 
+            hbtreat_currentdate = first(hbtreat_currentdate), 
+            ethnic_group = first(ethnic_group), 
+            postcode= first(postcode))
+
+
+saveRDS(smr_grp, paste0(folder_data_path, "/extracts/smr_first_icd10.rds"))
