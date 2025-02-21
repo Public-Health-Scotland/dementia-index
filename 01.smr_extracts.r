@@ -311,7 +311,12 @@ smr_long <- smr_long %>%
          dementia_other_substances =
            case_when(substr(diagnosis,1,5) %in% substance_codes~1, 
                      T~0)) %>%
-  filter(flag_dementia==1| lewy_body==1) %>%
+  ##flag lewy body and alcoholic /substance use dementia with thedementia flag
+  mutate(flag_dementia= case_when(dementia_other_substances==1 ~1,
+                                  dementia_alcohol==1 ~1,
+                                  lewy_body==1 ~1,
+                                  T~ flag_dementia)) %>%
+  filter(flag_dementia==1) %>%
   unique()
 
 ##aggregate on upi and date 
@@ -325,6 +330,7 @@ smr_agg <- smr_long %>%
             alzheimer_flag = max(alzheimer_flag), 
             dementia_lewy_body = max_(lewy_body), 
             dementia_alcohol = max_(dementia_alcohol),
+            dementia_other_substances = max_(dementia_other_substances),
             vascular_dementia = max_(vascular_dementia), 
             dementia_other_dis = max_(dementia_other_dis), 
             dementia_picks = max_(dementia_picks), 
@@ -364,6 +370,17 @@ first_alcohol <-smr_agg %>%
   filter(dementia_alcohol==1) %>%
   arrange(upi_number,admission_date) %>%
   group_by(upi_number,dementia_alcohol) %>%
+  summarise(diagnosis_date = first_(admission_date),
+            hbtreat_currentdate = first(hbtreat_currentdate),
+            location = first(location),   hbres_currentdate = first(hbres_currentdate), 
+            dob = first(dob), ethnic_group = first(ethnic_group), dr_postcode = first(dr_postcode), 
+            postcode = first(postcode))%>%
+  ungroup()
+
+first_substances <-smr_agg %>%
+  filter(dementia_other_substances==1) %>%
+  arrange(upi_number,admission_date) %>%
+  group_by(upi_number,dementia_other_substances) %>%
   summarise(diagnosis_date = first_(admission_date),
             hbtreat_currentdate = first(hbtreat_currentdate),
             location = first(location),   hbres_currentdate = first(hbres_currentdate), 
@@ -418,19 +435,20 @@ first_dementia_other_dis <-smr_agg %>%
 
 
 all_first_diags <- bind_rows(first_dementia_unspec, first_alzheimer, first_dementia_other_dis, 
-                             first_lewy, first_picks, first_vascular, first_alcohol)
+                             first_lewy, first_picks, first_vascular, first_alcohol, first_substances)
 names(all_first_diags  )
 
 all_first_diags_wide <-all_first_diags %>% select(upi_number, diagnosis_date ,dementia_unspecified, alzheimer_flag,
                                                   vascular_dementia , dementia_lewy_body, dementia_picks, 
-                                                  dementia_other_dis, dementia_alcohol) %>%
+                                                  dementia_other_dis, dementia_alcohol, dementia_other_substances) %>%
   mutate(dementia_type = case_when(dementia_unspecified==1~ "Unspecified_dementia", 
                                    alzheimer_flag==1 ~ "Dementia_Alzheimers", 
                                    vascular_dementia==1 ~ "Vascular_dementia", 
                                    dementia_lewy_body==1 ~ "Dementia_Lewy_body", 
                                    dementia_picks==1 ~ "Dementia_Picks", 
                                    dementia_other_dis== 1~ "Dementia_other_diseases", 
-                                   dementia_alcohol==1 ~ "Dementia_alcohol")) %>%
+                                   dementia_alcohol==1 ~ "Dementia_alcohol", 
+                                   dementia_other_substances==1 ~ "Dementia_other_substance", )) %>%
   select(upi_number, diagnosis_date, dementia_type) %>%
   pivot_wider(names_from= dementia_type, values_from = diagnosis_date)
 
@@ -661,7 +679,7 @@ all_smr_diags <- bind_rows(one, two, three)
 all_smr_diags <-all_smr_diags %>%
   rename_with(.cols = everything(), function(x){paste0("smr_", x)})
 
-saveRDS(all_smr_diags, "/PHI_conf/Dementia_Index/data/extracts/smr_diags_grouped.rds")
+saveRDS(all_smr_diags, "/PHI_conf/Dementia_Index/data/cleaned_extracts/smr_diags_grouped.rds")
 
 #save SMR diags file
 names(smr_raw)
@@ -672,7 +690,6 @@ smr_demogs <- smr_raw %>% filter(upi_number %in% all_smr_diags$smr_upi_number) %
 saveRDS(smr_demogs, "/PHI_conf/Dementia_Index/data/extracts/smr_demogs.rds")
 
 ### First diag retaining ICD10 codes####
-smr_raw <- readRDS(paste0(folder_data_path, "/extracts/temp_smr_raw.rds"))
 
 smr_raw <- readRDS(paste0(folder_data_path, "/extracts/temp_smr_raw.rds"))
 ##long smr extract
@@ -713,7 +730,12 @@ smr_long <- smr_long %>%
          dementia_other_substances =
            case_when(substr(diagnosis,1,5) %in% substance_codes~1, 
                      T~0)) %>%
-  filter(flag_dementia==1| lewy_body==1) %>%
+  ##flag lewy body and alcoholic /substance use dementia with thedementia flag
+  mutate(flag_dementia= case_when(dementia_other_substances==1 ~1,
+                                  dementia_alcohol==1 ~1,
+                                  lewy_body==1 ~1,
+                                  T~ flag_dementia)) %>%
+  filter(flag_dementia==1) %>%
   unique()
 
 ##first of each icd10 code
@@ -728,4 +750,4 @@ smr_grp <- smr_long %>%
             postcode= first(postcode))
 
 
-saveRDS(smr_grp, paste0(folder_data_path, "/extracts/smr_first_icd10.rds"))
+saveRDS(smr_grp, paste0(folder_data_path, "/cleaned_extracts/smr_first_icd10.rds"))
