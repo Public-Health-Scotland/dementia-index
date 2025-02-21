@@ -102,4 +102,4 @@ all_CHC <- rbind(CHC_MD, CHC_NMD, two_diags)
 all_CHC <- all_CHC %>%
 rename_with(.cols = everything(), function(x){paste0("CHC_", x)})
 
-saveRDS(all_CHC, "/PHI_conf/Dementia_Index/data/extracts/CHC_clean.rds")
+saveRDS(all_CHC, "/PHI_conf/Dementia_Index/data/cleaned_extracts/CHC_clean.rds")

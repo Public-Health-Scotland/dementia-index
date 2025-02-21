@@ -117,7 +117,7 @@ pis <- pis  %>%
 pis <- pis %>%
   rename_with(.cols = everything(), function(x){paste0("pis_", x)}) %>% mutate(source="PIS")
 
-saveRDS(pis , "/PHI_conf/Dementia_Index/data/extracts/pis_clean.rds")
+saveRDS(pis , "/PHI_conf/Dementia_Index/data/cleaned_extracts/pis_clean.rds")
 ##hepma and homecare extracts
 ## Open Connection 
 dv <- dbConnect(odbc(), dsn = "DVPROD", 

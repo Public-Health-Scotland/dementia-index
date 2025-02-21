@@ -106,6 +106,6 @@ SC_first <-SC %>%
 
 #SC_first <- SC_first %>%
 #  rename_with(.cols = everything(), function(x){paste0("SC_", x)})
-saveRDS(SC_first, "/PHI_conf/Dementia_Index/data/extracts/SC_clean.rds")
+saveRDS(SC_first, "/PHI_conf/Dementia_Index/data/cleaned_extracts/SC_clean.rds")
 
 

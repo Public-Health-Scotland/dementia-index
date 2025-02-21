@@ -37,4 +37,4 @@ pdsextract  <-pdsextract %>%
          dementia_subtype = subtype_of_dementia) %>%
   rename_with(.cols = everything(), function(x){paste0("pds_", x)})
 
-saveRDS(pdsextract, "/PHI_conf/Dementia_Index/data/extracts/PDS_clean.rds")
+saveRDS(pdsextract, "/PHI_conf/Dementia_Index/data/cleaned_extracts/PDS_clean.rds")
