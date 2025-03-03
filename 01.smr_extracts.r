@@ -8,7 +8,7 @@ data_smr01_temp_1 <- as_tibble(
   dbGetQuery(
     SMRAConnection, paste0(
       "
-    SELECT UPI_NUMBER,CI_CHI_NUMBER, LINK_NO, GLS_CIS_MARKER, CIS_MARKER, ADMISSION_DATE, DISCHARGE_DATE,
+    SELECT UPI_NUMBER,CI_CHI_NUMBER, LINK_NO, GLS_CIS_MARKER, CIS_MARKER, ADMISSION_DATE, DISCHARGE_DATE,SEX,
     HBTREAT_CURRENTDATE,LOCATION,
     MAIN_CONDITION,OTHER_CONDITION_1,
     OTHER_CONDITION_2,OTHER_CONDITION_3,
@@ -45,7 +45,7 @@ data_smr01_1e_temp_1 <- as_tibble(
   dbGetQuery(
     SMRAConnection, paste0(
       "
-    SELECT UPI_NUMBER,CI_CHI_NUMBER, LINK_NO,CIS_MARKER, GLS_CIS_MARKER, ADMISSION_DATE, DISCHARGE_DATE,
+    SELECT UPI_NUMBER,CI_CHI_NUMBER, LINK_NO,CIS_MARKER, GLS_CIS_MARKER, ADMISSION_DATE, DISCHARGE_DATE,SEX,
     HBTREAT_CURRENTDATE,LOCATION,
     MAIN_CONDITION,OTHER_CONDITION_1,
     OTHER_CONDITION_2,OTHER_CONDITION_3,
@@ -82,7 +82,7 @@ data_smr04 <- as_tibble(
   dbGetQuery(
     SMRAConnection, paste0(
       "
-   SELECT UPI_NUMBER,CI_CHI_NUMBER, LINK_NO,CIS_MARKER,  ADMISSION_DATE, DISCHARGE_DATE,
+   SELECT UPI_NUMBER,CI_CHI_NUMBER, LINK_NO,CIS_MARKER,  ADMISSION_DATE, DISCHARGE_DATE,SEX,
     HBTREAT_CURRENTDATE,LOCATION,
     MAIN_CONDITION,OTHER_CONDITION_1,
     OTHER_CONDITION_2,OTHER_CONDITION_3,
@@ -119,7 +119,7 @@ data_smr04_sub <- as_tibble(
   dbGetQuery(
     SMRAConnection, paste0(
       "
-       SELECT UPI_NUMBER,CI_CHI_NUMBER, LINK_NO,CIS_MARKER, ADMISSION_DATE, DISCHARGE_DATE,
+       SELECT UPI_NUMBER,CI_CHI_NUMBER, LINK_NO,CIS_MARKER, ADMISSION_DATE, DISCHARGE_DATE,SEX,
     HBTREAT_CURRENTDATE,LOCATION,
     MAIN_CONDITION,OTHER_CONDITION_1,
     OTHER_CONDITION_2,OTHER_CONDITION_3,
@@ -549,6 +549,7 @@ smr <- smr %>% mutate(dementia_subtype =  case_when(total_types==1 & flag_unspec
 
 two <- smr %>% filter(total_types==2)
 three<- smr %>% filter(total_types==3)
+four <- smr %>% filter(total_types==4)
 one <- smr %>% filter(total_types==1)
 
 one <- one %>% select(upi_number, dementia_subtype_1, minimum_date) %>%
@@ -747,7 +748,8 @@ smr_grp <- smr_long %>%
             dob= first(dob), 
             hbtreat_currentdate = first(hbtreat_currentdate), 
             ethnic_group = first(ethnic_group), 
-            postcode= first(postcode))
+            postcode= first(postcode), 
+            sex = first_(sex))
 
 
 saveRDS(smr_grp, paste0(folder_data_path, "/cleaned_extracts/smr_first_icd10.rds"))

@@ -10,9 +10,11 @@ library(hablar)
 library(readxl)
 library(arrow)
 library(odbc)
+library(lubridate)
+
 
 folder_data_path <- "/PHI_conf/Dementia_Index/data"
-
+cohort_start_date <- as.Date("2014-01-01")
 # connect to SMRA####
 #using keyring
 ##this will only work if you have keyring setup for SMRA

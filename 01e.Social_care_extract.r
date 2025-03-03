@@ -96,7 +96,7 @@ SC_first <-SC %>%
   group_by(grouping_chi, type_care2) %>%
   arrange(diagnosis_date) %>%
   slice(1) %>% 
-  select(chi, UPI_NUMBER, diagnosis_date, chi_date_of_birth, chi_date_of_birth, best_postcode,
+  select(chi, chi_gender, UPI_NUMBER, diagnosis_date, chi_date_of_birth, chi_date_of_birth, best_postcode,
          submitted_ethnic_group, ch_admission_date, date_type) %>%
   mutate(dementia_type = "99 Social care flag") %>%
   rename(type_of_care_group = type_care2) %>% 

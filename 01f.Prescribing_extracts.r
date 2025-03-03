@@ -100,6 +100,8 @@ pis <- pis %>%
 
 ##First valid record per person.  
 pis <- pis  %>%
+  #filter dates before Apr 2017
+  filter(presc_date_clean >= as.Date("2017-04-01")) %>%
   ##remove missing and invalid chi
   mutate(valid_chi = phsmethods::chi_check(pat_upi_c)) %>%
   filter(valid_chi=="Valid CHI") %>%

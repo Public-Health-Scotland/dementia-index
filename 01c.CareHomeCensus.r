@@ -17,7 +17,7 @@ table(year(CareHomeCensus$DateOfDischarge) - year(CareHomeCensus$DateOfAdmission
 table(year(CareHomeCensus$DateOfAdmission)[CareHomeCensus$DateOfAdmission == CareHomeCensus$DateOfBirth])
 
 
-
+table(year(CareHomeCensus$DateOfAdmission))
 hist(year(CareHomeCensus$DateOfAdmission))
 table(CareHomeCensus$DementiaMD)
 table(CareHomeCensus$DementiaNMD)
@@ -36,8 +36,14 @@ CareHomeCensus <-CareHomeCensus %>%
   filter(DateOfAdmission!=DateOfBirth | is.na(DateOfBirth)) %>%
   filter(DateOfDischarge >= as.Date("2014-01-01") | is.na(DateOfDischarge))
 
+##filter out rows where admission is after discharge date
+##and admission before 1990
 CareHomeCensus <-CareHomeCensus %>%
-  mutate(los_years = round((as.Date(DateOfDischarge)- as.Date(DateOfAdmission))/365.25,1))
+  mutate(los_years = round((as.Date(DateOfDischarge)- as.Date(DateOfAdmission))/365.25,1)) %>% 
+  filter(los_years >=0) %>%
+  filter(DateOfAdmission >= as.Date("1994-01-01")) %>%
+  filter(is.na(DateOfDischarge) | DateOfDischarge >= as.Date("1994-01-01"))
+  
 
 
 CareHomeCensus <-CareHomeCensus %>%
@@ -56,6 +62,13 @@ CareHomeCensus <-CareHomeCensus %>%
                                       EthnicOrigin== "White" ~ "1",
                                       EthnicOrigin=="Unknown" ~NA, T~NA))
 
+
+CHC_early <- CareHomeCensus %>% filter(DateOfAdmission <= as.Date("2013-12-31"))
+CHC_late <- CareHomeCensus %>% filter(DateOfAdmission > as.Date("2013-12-31"))
+
+table(CHC_early$UPI_NUMBER %in% CHC_late$UPI_NUMBER)
+summary(CHC_early$DateOfDischarge)
+table(is.na(CHC_early$DateOfDischarge))
 
 ##Find first record per person with NMD and MD dementia
 CHC_agg <- CareHomeCensus %>%
@@ -93,7 +106,8 @@ two_diags <- two_diags %>% arrange(UPI_NUMBER, first_admission) %>%
   group_by(UPI_NUMBER) %>%
   mutate(drop = case_when(min_(first_admission)==max_(first_admission) &
                             dementia_subtype=="99 Suspected dementia" ~1, 
-                          dementia_subtype=="99 Suspected dementia" & lag(dementia_subtype)=="07 Yet to be determined"~2)) 
+                          dementia_subtype=="99 Suspected dementia" & 
+                            lag(dementia_subtype)=="07 Yet to be determined"~2)) 
 two_diags <- two_diags %>% ungroup() %>% filter(is.na(drop))  %>% select(-drop)
 
 all_CHC <- rbind(CHC_MD, CHC_NMD, two_diags)
