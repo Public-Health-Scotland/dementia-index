@@ -242,7 +242,10 @@ table(dementia_index$date_type, dementia_index$death_diff <0, useNA="always" )
 
 ##remove the date of death is it is 
 dementia_index <- dementia_index %>%
-  mutate(date_of_death = case_when(wrong_dod==1 ~NA, T~date_of_death)) %>% select(-wrong_dod, -death_diff, -n_chi)
+  mutate(date_of_death = case_when(wrong_dod==1 ~NA, T~date_of_death)) %>% 
+  select(-wrong_dod, -death_diff, -n_chi) %>%
+  #add date of death for the death only records.
+  mutate(date_of_death = case_when(source=="NRS deaths" ~ diagnosis_date, T~date_of_death))
 names(dementia_index)
 dementia_index <- dementia_index %>%
   select(source, upi_number, diagnosis_date, diagnosis, diagnosis_description, date_of_death, 
