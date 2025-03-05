@@ -305,8 +305,8 @@ smr_types2 <- smr_all %>% group_by(smr_dementia_subtype_2) %>%count() %>%
 
 
 death_types <- dementia_deaths %>%
-  group_by(NRSdeaths_dementia_subtype_1) %>% count() %>%
-   rename(NRSdeaths = n, dementia_subtype = NRSdeaths_dementia_subtype_1) %>%
+  group_by(dementia_subtype_1) %>% count() %>%
+   rename(NRSdeaths = n, dementia_subtype = dementia_subtype_1) %>%
   mutate(dementia_subtype = 
            case_when(dementia_subtype=="07 yet to be determined"~ "07 Yet to be determined", 
                      T~dementia_subtype))
