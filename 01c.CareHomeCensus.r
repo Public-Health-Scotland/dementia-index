@@ -6,35 +6,20 @@
 CareHomeCensus <- read_excel("/PHI_conf/Dementia_Index/data/extracts/dementia_CareHomeCensus_2017_18_to_2023_24.xlsx")
 View(CareHomeCensus)
 
-table(year(CareHomeCensus$DateOfAdmission))
-table(year(CareHomeCensus$DateOfDischarge))
-##SOme dates are dicharge before admission - diacard? thhere are only a few...
-table(year(CareHomeCensus$DateOfDischarge) - year(CareHomeCensus$DateOfAdmission))
-##also some very long stays - so date of "diagnosis" is pretty vague
-
-##I tihnk some of the earlier "admission" dates are acutall DOBs in wrong column - they duplicate the DOB column
-
-table(year(CareHomeCensus$DateOfAdmission)[CareHomeCensus$DateOfAdmission == CareHomeCensus$DateOfBirth])
-
-
-table(year(CareHomeCensus$DateOfAdmission))
-hist(year(CareHomeCensus$DateOfAdmission))
-table(CareHomeCensus$DementiaMD)
-table(CareHomeCensus$DementiaNMD)
-table(CareHomeCensus$EthnicOrigin)
-table(CareHomeCensus$Sex)
-table(is.na(CareHomeCensus$UPI_NUMBER))
-table(CareHomeCensus$DementiaNMD, CareHomeCensus$DementiaMD, useNA="always")
-
 #Clean up variables with inconsistent values
 CareHomeCensus <-CareHomeCensus %>%
   filter(!is.na(UPI_NUMBER)) %>% 
+  mutate(UPI_NUMBER = phsmethods::chi_pad(UPI_NUMBER)) %>% 
+  mutate(valid_chi = phsmethods::chi_check(UPI_NUMBER)) %>%
+  filter(valid_chi=="Valid CHI") %>%
+  select(-valid_chi) %>%
   #remove records with dates that are not reliable
   #remove if dicharge before admisison
   filter(DateOfAdmission <= DateOfDischarge |is.na(DateOfDischarge)) %>% 
   #remve if DOB is duplicated in admission field
   filter(DateOfAdmission!=DateOfBirth | is.na(DateOfBirth)) %>%
   filter(DateOfDischarge >= as.Date("2014-01-01") | is.na(DateOfDischarge))
+
 
 ##filter out rows where admission is after discharge date
 ##and admission before 1990

@@ -12,9 +12,13 @@ names(pdsextract)
 #check only one record per chi
 check_chi <- pdsextract %>% group_by(chi_number) %>% count()
 table(check_chi$n)
-
+table(phsmethods::chi_check(pdsextract$chi_number))
 ##remove missing chi
-pdsextract  <-pdsextract   %>% filter(!is.na(chi_number))
+pdsextract  <-pdsextract %>% filter(!is.na(chi_number)) %>%
+  mutate(chi_number = phsmethods::chi_pad(chi_number)) %>%
+  mutate(valid_chi= phsmethods::chi_check(chi_number)) %>%
+  filter(valid_chi=="Valid CHI") %>%
+  select(-valid_chi) 
 
 ###Remove placeholder postcodes
 #table(substr(pdsextract$postcode,1,2))
