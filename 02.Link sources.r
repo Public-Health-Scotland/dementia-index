@@ -3,9 +3,6 @@
 ######################################
 
 ###Step 1 load data and use CHI database to convert CHI to UPIs
-
-###Bind records into one dataset. LONG
-## Make sure the source record is identifiable
 ## 
 smr_all<- readRDS("/PHI_conf/Dementia_Index/data/cleaned_extracts/smr_first_icd10.rds") %>% ungroup()
 PDS <- readRDS("/PHI_conf/Dementia_Index/data/cleaned_extracts/PDS_clean.rds") %>% ungroup()
@@ -32,10 +29,8 @@ upis <- SMRAConnection %>% tbl(dbplyr::in_schema("UPIP", "L_UPI_DATA")) %>%
          chi_date_postcode_change = DATE_ADDRESS_CHANGED) %>% 
   mutate(chi_dob = as_date(chi_dob))
 
-##select minimal variables.
+##Clean source names and select minimal required demographics####
 ##reame for consistency
-names(smr_all)
-
 code_list <- read_csv("/PHI_conf/Dementia_Index/data/code_list.csv")
 smr <- smr_all %>% ungroup() %>% 
   mutate(sex = as.numeric(sex)) %>%
@@ -80,7 +75,7 @@ PIS <- PIS %>% mutate(diagnosis_description = "prescription from BNF ch4.11") %>
 names(dementia_deaths)
 PDS <- PDS %>%
   mutate(sex = case_when(pds_sex=="01 Male" ~1, 
-                         pds_sex=="02 Female" ~1 )) %>%
+                         pds_sex=="02 Female" ~2 )) %>%
   rename(upi_number= pds_chi_number,
          diagnosis_date = pds_diagnosis_date,
          diagnosis_description = pds_dementia_subtype,
@@ -90,7 +85,7 @@ PDS <- PDS %>%
   mutate(date_type="pds_date") %>% select(-pds_sex, -pds_source) %>% mutate(source="PDS")
 
 social_care <- social_care %>%
-  mutate(sex = case_when(chi_gender=="Male" ~ 1,chi_gender=="Female" ~2, T~9 )) %>%
+  mutate(sex = case_when(chi_gender=="M" ~ 1,chi_gender=="F" ~2, T~9 )) %>%
   rename(dob = chi_date_of_birth, 
          ethnic_group = submitted_ethnic_group, 
          postcode = best_postcode, 
@@ -112,24 +107,24 @@ CHC <- CHC %>%
   ) %>% mutate(date_type = "date of carehome admission")%>%
   select(-CHC_Sex)%>% mutate(source="Care home census")
 
-##bind sources long  except dementia deaths####
+##bind sources long ####
+##except dementia deaths#
 df <- bind_rows(smr, PIS,PDS,CHC,social_care)
 df <- df %>% select(upi_number, diagnosis_date, diagnosis, diagnosis_description, source,
                     dob, sex, postcode, ch_postcode, everything())
 names(df)
 
-
-##identify unlinked deaths in demenita deaths####
+##identify unlinked deaths in dementia deaths####
 upi_list <- unique(df$upi_number)
 unlinked_deaths <- dementia_deaths %>% filter(!upi_number %in% upi_list)
 names(unlinked_deaths)
 ##extract nrs date of death####
 death_start_date <- as.Date("2014-01-01")
-##identify any duplicate deaths bfore trtying to link to main list. 
+##identify any duplicate deaths before linking to main list. 
 deaths_temp_1 <- as_tibble(
   dbGetQuery(
     SMRAConnection, paste0(
-      "SELECT UPI_NUMBER,CHI, DATE_OF_DEATH,
+      "SELECT UPI_NUMBER,CHI, DATE_OF_BIRTH, DATE_OF_DEATH,
      YEAR_OF_REGISTRATION , REGISTRATION_DISTRICT, ENTRY_NUMBER ,
      SEX, POSTCODE,HEALTH_BOARD_AREA
     FROM ANALYSIS.GRO_DEATHS_C SMR
@@ -137,7 +132,8 @@ deaths_temp_1 <- as_tibble(
     ")
   )) %>% clean_names()
 
-table(is.na(deaths_temp_1$chi) , is.na(deaths_temp_1$upi_number))
+#table(is.na(deaths_temp_1$chi) , is.na(deaths_temp_1$upi_number))
+###use chi if upi unavlaible, remove those with missing chi and upi
 deaths_temp_1 <- deaths_temp_1 %>% mutate(deaths_upi = case_when(is.na(upi_number)~ chi , T~upi_number)) %>%
   select(-chi, -upi_number)  
 
@@ -148,9 +144,8 @@ death_upi <- SMRAConnection %>% tbl(dbplyr::in_schema("UPIP", "L_UPI_DATA")) %>%
   distinct() %>% 
   collect()
 ##se
-
 deaths_temp_1 <- deaths_temp_1 %>% left_join(death_upi, by = c("deaths_upi" = "CHI_NUMBER"))
-table(deaths_temp_1$deaths_upi==deaths_temp_1$UPI_NUMBER, useNA="always")
+#table(deaths_temp_1$deaths_upi==deaths_temp_1$UPI_NUMBER, useNA="always")
 
 ##update the upi and remove records where no upi or chi can be found
 deaths_temp_1 <- deaths_temp_1 %>% mutate(deaths_upi=case_when(is.na(UPI_NUMBER)~ deaths_upi, T~UPI_NUMBER)) %>%
@@ -158,20 +153,14 @@ deaths_temp_1 <- deaths_temp_1 %>% mutate(deaths_upi=case_when(is.na(UPI_NUMBER)
 length(unique(deaths_temp_1$deaths_upi))
 nrow(deaths_temp_1)
 
-##still a few dups
+##still a few duplicate records
 deaths_temp_1<- deaths_temp_1 %>% group_by(deaths_upi) %>%
   mutate(n_chi = n()) %>% ungroup()
-#dups2010 <- deaths_temp_1 %>% filter(n_chi>1)
-#dups2010 <- dups2010 %>% group_by(deaths_upi) %>% #
-#  mutate(dup_reg = case_when(min(date_of_death)==max(date_of_death) ~1, T~0)) %>%
-#  ungroup()
-
 
 dups <- deaths_temp_1 %>% filter(n_chi>1)
 
-
-##some look like duplicate registrations - 
-#same date of death and consecutive reg numbers, can probs use these still just slice(1)
+##some look like duplicate registrations -
+#same date of death and consecutive reg numbers, can use these still just slice(1)
 dups <- dups %>% group_by(deaths_upi) %>% 
   mutate(dup_reg = case_when(min(date_of_death)==max(date_of_death) ~1, T~0)) %>%
   ungroup()
@@ -182,15 +171,12 @@ dups_fix <- dups %>% filter(dup_reg==1) %>%
 deaths_temp_1 <- deaths_temp_1 %>% filter(!(deaths_upi %in%  dups$deaths_upi)) 
 
 deaths <- bind_rows(deaths_temp_1, dups_fix) %>%
-  select(deaths_upi, date_of_death)
+  select(deaths_upi, date_of_death, date_of_birth) %>%
+  rename(death_dob = date_of_birth)
 summary(df$diagnosis_date)
+
 deaths<- deaths %>% group_by(deaths_upi) %>%
   mutate(n_chi = n()) %>% ungroup()
-#dups2010 <- deaths_temp_1 %>% filter(n_chi>1)
-#dups2010 <- dups2010 %>% group_by(deaths_upi) %>% #
-#  mutate(dup_reg = case_when(min(date_of_death)==max(date_of_death) ~1, T~0)) %>%
-#  ungroup()
-
 
 dups <- deaths_temp_1 %>% filter(n_chi>1)
 
@@ -217,7 +203,8 @@ unlinked_dementia_deaths <- unlinked_dementia_deaths  %>%
          diagnosis_4 = icd10_4 ,
          ethnic_group = ethnicity_code,
          diagnosis_description = dementia_subtype_1,
-         diagnosis_description2 = dementia_subtype_2
+         diagnosis_description2 = dementia_subtype_2,
+         dob = date_of_birth
          )%>%
   mutate(sex = as.numeric(sex)) %>%
     mutate(diagnosis_date = date_of_death, source = "NRS deaths")
@@ -230,9 +217,9 @@ dementia_index <- dementia_index %>%
   mutate(wrong_dod = case_when(date_of_death < (diagnosis_date-1) ~ 1  , T~0)) %>%
   mutate(death_diff = as.Date(date_of_death) - as.Date(diagnosis_date))
 
-table(dementia_index$wrong_dod)
-table(dementia_index$death_diff <0)
-table(dementia_index$death_diff <(-2))
+#table(dementia_index$wrong_dod)
+#table(dementia_index$death_diff <0)
+#table(dementia_index$death_diff <(-2))
 ##ok, quite a lot, although small in % terms, and not just a few days out!
 
 table(year(dementia_index$date_of_death), year(dementia_index$diagnosis_date))
@@ -246,10 +233,68 @@ dementia_index <- dementia_index %>%
   select(-wrong_dod, -death_diff, -n_chi) %>%
   #add date of death for the death only records.
   mutate(date_of_death = case_when(source=="NRS deaths" ~ diagnosis_date, T~date_of_death))
-names(dementia_index)
+
+###derive healthboard of residence and other geographies####
+dementia_index <- dementia_index %>%
+  mutate(postcode = phsmethods::format_postcode(postcode, "pc7"))  %>%
+  left_join(geogs_lookup, by = c("postcode" = "pc7"))
+table(dementia_index$hb2019name, dementia_index$source)
+table(year(dementia_index$diagnosis_date)[dementia_index$source=="social care"],
+      dementia_index$hb2019name[dementia_index$source=="social care"])
+##social care seem to have  low returns for lothian
+
+###Ethnic group codes###
+dementia_index <- dementia_index %>%
+  mutate(ethnic_group = 
+           case_when(ethnic_group== "1" ~ "1 White",
+                     ethnic_group=="09" | ethnic_group=="-" | ethnic_group=="0" |ethnic_group=="99"~"99 Not Known",
+                     is.na(ethnic_group) ~ "99 Not Known",
+                     ethnic_group== "1A" ~ "1A Scottish",
+                     ethnic_group== "1B" ~ "1B Other British",
+                     ethnic_group== "1C" ~ "1C Irish",
+                     ethnic_group== "1K" ~ "1K Gypsy/Traveller",
+                     ethnic_group== "1L" ~ "1L Polish",
+                     ethnic_group== "1Z" ~ "1Z Other white ethnic group",
+                     ethnic_group== "2" ~ "2A Any mixed or multiple ethnic groups",
+                     ethnic_group== "2 Any mixed or multiple ethnic groups" ~ "2A Any mixed or multiple ethnic groups",
+                     ethnic_group== "2A" ~ "2A Any mixed or multiple ethnic groups",
+                     ethnic_group== "3" ~ "3 Asian, Asian Scottish or Asian British",
+                     ethnic_group== "3F" ~ "3F Pakistani, Pakistani Scottish or Pakistani British",
+                     ethnic_group== "3G" ~ "3G Indian, Indian Scottish or Indian British",
+                     ethnic_group== "3H" ~ "3H Bangladeshi, Bangladeshi Scottish or Bangladeshi British",
+                     ethnic_group== "3J" ~ "3J Chinese, Chinese Scottish or Chinese British",
+                     ethnic_group== "3Z" ~ "3Z Other Asian, Asian Scottish or Asian British",
+                     ethnic_group== "4D" ~ "4D African, African Scottish or African British",
+                     ethnic_group== "4X" ~ "4X African, Scottish African or British African",
+                     ethnic_group== "5C" ~ "5C Caribbean, Caribbean Scottish or Caribbean British",
+                     ethnic_group== "5Y" ~ "5Y Other Caribbean or Black",
+                     ethnic_group== "6A" ~ "6A Arab, Arab Scottish or Arab British",
+                     ethnic_group== "6Z" ~ "6Z Other ethnic group",
+                     ethnic_group== "98" ~ "98 Refused/Not Provided by patient",
+                     
+                                                            T~ethnic_group))
+
+
+##select variables and save###
 dementia_index <- dementia_index %>%
   select(source, upi_number, diagnosis_date, diagnosis, diagnosis_description, date_of_death, 
-                          dob, sex, postcode, ch_postcode, everything())
+                          dob, sex, postcode, ch_postcode, everything()) %>%
+  select(-health_board_area, -chi_postcode)
+
+##trying to work out sensible date limits for deriving chi dob
+dementia_index <- dementia_index %>%
+  mutate(age_diag =floor(as.numeric((as.Date(diagnosis_date) - as.Date(dob))/365.25))) %>%
+  mutate(death_age_diag = floor(as.numeric((as.Date(diagnosis_date) - as.Date(death_dob))/365.25))) %>%
+  mutate(chi_dob = phsmethods::dob_from_chi(upi_number, min_date = as.Date("1900-01-01"), max_date = as.Date("2000-01-01")), 
+         chi_sex = phsmethods::sex_from_chi(upi_number) ) %>%
+  mutate(chi_age_diag= floor(as.numeric((as.Date(diagnosis_date) - as.Date(chi_dob))/365.25)))
+
+comparison_ages <- dementia_index %>% group_by(age_diag, chi_age_diag) %>% count()
+comparison_death_ages <- dementia_index %>% group_by(age_diag, death_age_diag) %>% count()
+table(dementia_index$death_age_diag)
+
+dementia_index <- dementia_index %>%
+  mutate()
 ##save full file####
 saveRDS(dementia_index, "/PHI_conf/Dementia_Index/data/INDEX/dementia_index.rds")
 ###take first record per person, per source (some record currently have >1 type recorded)
@@ -259,4 +304,5 @@ dementia_index_1row <- dementia_index %>%
   arrange(upi_number, diagnosis_date) %>% slice(1) %>% ungroup()
 saveRDS(dementia_index_1row , "/PHI_conf/Dementia_Index/data/INDEX/dementia_index_first_incidence_only.rds")
 ##save as index
+
 
