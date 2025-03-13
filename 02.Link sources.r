@@ -225,7 +225,6 @@ dementia_index <- dementia_index %>%
 table(year(dementia_index$date_of_death), year(dementia_index$diagnosis_date))
 table(dementia_index$source, (dementia_index$death_diff <0 & dementia_index$death_diff >= (-1) ))
 ###mainly social care diagnoses are linked to wrong death (or maybe SC has wrong dates)
-table(dementia_index$date_type, dementia_index$death_diff <0, useNA="always" )
 
 ##remove the date of death is it is 
 dementia_index <- dementia_index %>%
@@ -238,10 +237,22 @@ dementia_index <- dementia_index %>%
 dementia_index <- dementia_index %>%
   mutate(postcode = phsmethods::format_postcode(postcode, "pc7"))  %>%
   left_join(geogs_lookup, by = c("postcode" = "pc7"))
+
 table(dementia_index$hb2019name, dementia_index$source)
 table(year(dementia_index$diagnosis_date)[dementia_index$source=="social care"],
       dementia_index$hb2019name[dementia_index$source=="social care"])
 ##social care seem to have  low returns for lothian
+
+##SIMD###
+dementia_index <- dementia_index %>%
+ left_join(simd_lookup, by = c("postcode" = "pc7")) %>% 
+  mutate(SIMD_at_diag  = case_when(year(diagnosis_date) >= 2017 ~ simd2020v2_sc_quintile,
+                                   year(diagnosis_date) >= 2014 & year(diagnosis_date) < 2017 ~ simd2016_sc_quintile,
+                                   year(diagnosis_date)>= 2010 & year(diagnosis_date) < 2014 ~ simd2012_sc_quintile,
+                                          TRUE ~ NA_real_)) %>%
+    mutate(SIMD_at_diag = 
+           case_when(source=="Care home census" | type_of_care_group=="care home" ~NA_real_, 
+                     T~ SIMD_at_diag ))
 
 ###Ethnic group codes###
 dementia_index <- dementia_index %>%
@@ -275,11 +286,6 @@ dementia_index <- dementia_index %>%
                                                             T~ethnic_group))
 
 
-##select variables and save###
-dementia_index <- dementia_index %>%
-  select(source, upi_number, diagnosis_date, diagnosis, diagnosis_description, date_of_death, 
-                          dob, sex, postcode, ch_postcode, everything()) %>%
-  select(-health_board_area, -chi_postcode)
 
 ##trying to work out sensible date limits for deriving chi dob
 dementia_index <- dementia_index %>%
@@ -293,8 +299,19 @@ comparison_ages <- dementia_index %>% group_by(age_diag, chi_age_diag) %>% count
 comparison_death_ages <- dementia_index %>% group_by(age_diag, death_age_diag) %>% count()
 table(dementia_index$death_age_diag)
 
+
+##select variables and save###
 dementia_index <- dementia_index %>%
-  mutate()
+  select(source, upi_number,chi_dob,chi_sex,chi_age_diag,  diagnosis_date,
+         diagnosis, diagnosis_description, date_of_death, 
+         postcode, ch_postcode, SIMD_at_diag,hb2019, hb2019name, everything()) %>%
+  select(-c(health_board_area, chi_postcode, sex, dob, death_dob, age_diag, 
+            death_age_diag, hbtreat_currentdate, institution)) %>%
+  rename(date_of_birth = chi_dob, sex=chi_sex, age_at_diagnosis = chi_age_diag, 
+         hbres = hb2019name, hbres_code= hb2019)
+
+names(dementia_index)
+
 ##save full file####
 saveRDS(dementia_index, "/PHI_conf/Dementia_Index/data/INDEX/dementia_index.rds")
 ###take first record per person, per source (some record currently have >1 type recorded)
