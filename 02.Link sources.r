@@ -59,7 +59,8 @@ smr <- smr_all %>% ungroup() %>%
                                            substr(diagnosis,1,5)=="F1073"~ "Dementia due to alcohol use", 
                                            substr(diagnosis,1,5)=="F1573"~ "Dementia due to use of other stimulants", 
                                            substr(diagnosis,1,4)=="F051"~ "Delirium superimposed on dementia")) %>% 
-  rename(diagnosis_date = admission_date)
+  rename(diagnosis_date = admission_date)%>%
+  mutate(date_type="hospital admission date")
 
 
 names(smr)
@@ -70,7 +71,7 @@ PIS <- PIS %>% mutate(diagnosis_description = "prescription from BNF ch4.11") %>
          sex = pis_sex, 
          dob = pis_dob,
          ethnic_group = pis_ethnic_group) %>%
-  mutate(date_type="smr_admission_date") %>% select(-pis_CHI_dob)
+  mutate(date_type="date_prescribed") %>% select(-pis_CHI_dob)
 
 names(dementia_deaths)
 PDS <- PDS %>%
