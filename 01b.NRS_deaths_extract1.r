@@ -30,30 +30,33 @@ deaths_temp_1 <- as_tibble(
 
 #####################################################
 
+# include G30 in cause of death codes 
+icd10_dementia_deaths <- c(icd10_dementia, "G30")
+
 ##flag and select deaths with any dementia code
 deaths <- deaths_temp_1 %>% 
-  mutate(flag_dementia = case_when(substr(underlying_cause_of_death,1,3) %in% icd10_dementia ~1,
-                                   substr(underlying_cause_of_death,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_0,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_0,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_1,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_1,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_2,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_2,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_3,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_3,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_4,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_4,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_5,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_5,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_6,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_6,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_7,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_7,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_8,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_8,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_9,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_9,1,4) %in% icd10_dementia ~1,
+  mutate(flag_dementia = case_when(substr(underlying_cause_of_death,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(underlying_cause_of_death,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_0,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_0,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_1,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_1,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_2,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_2,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_3,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_3,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_4,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_4,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_5,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_5,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_6,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_6,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_7,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_7,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_8,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_8,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_9,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_9,1,4) %in% icd10_dementia_deaths ~1,
                                    T~0))
                                    
                                    
@@ -89,19 +92,19 @@ dementia_deaths  <-dementia_deaths  %>%
                                      substr(cause_of_death_code_9,1,3)  =="F00"~1,
                                     T~0))
 table(dementia_deaths$flag_alzheimers, dementia_deaths$flag_G30_codes)
-##none in combination so  ignore the g30 codes.
+##none in combination, including g30 codes to follow NRS methodology.
 dementia_deaths <- dementia_deaths %>%
-  mutate(dementia_alzheimers = case_when(substr(underlying_cause_of_death,1,3) =="F00"~1,
-                                     substr(cause_of_death_code_0,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_1,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_2,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_3,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_4,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_5,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_6,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_7,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_8,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_9,1,3)  =="F00"~1,
+  mutate(dementia_alzheimers = case_when(substr(underlying_cause_of_death,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_0,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_1,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_2,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_3,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_4,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_5,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_6,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_7,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_8,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_9,1,3) %in% c("F00", "G30") ~1,
                                      T~0)) %>%
              mutate(vascular_dementia = case_when(substr(underlying_cause_of_death,1,3) =="F01"~1,
                                                   substr(cause_of_death_code_0,1,3)  =="F01"~1,
