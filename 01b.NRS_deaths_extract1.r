@@ -30,30 +30,33 @@ deaths_temp_1 <- as_tibble(
 
 #####################################################
 
+# include G30 in cause of death codes 
+icd10_dementia_deaths <- c(icd10_dementia, "G30")
+
 ##flag and select deaths with any dementia code
 deaths <- deaths_temp_1 %>% 
-  mutate(flag_dementia = case_when(substr(underlying_cause_of_death,1,3) %in% icd10_dementia ~1,
-                                   substr(underlying_cause_of_death,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_0,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_0,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_1,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_1,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_2,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_2,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_3,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_3,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_4,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_4,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_5,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_5,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_6,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_6,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_7,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_7,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_8,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_8,1,4) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_9,1,3) %in% icd10_dementia ~1,
-                                   substr(cause_of_death_code_9,1,4) %in% icd10_dementia ~1,
+  mutate(flag_dementia = case_when(substr(underlying_cause_of_death,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(underlying_cause_of_death,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_0,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_0,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_1,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_1,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_2,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_2,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_3,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_3,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_4,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_4,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_5,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_5,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_6,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_6,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_7,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_7,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_8,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_8,1,4) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_9,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_9,1,4) %in% icd10_dementia_deaths ~1,
                                    T~0))
                                    
                                    
@@ -89,19 +92,19 @@ dementia_deaths  <-dementia_deaths  %>%
                                      substr(cause_of_death_code_9,1,3)  =="F00"~1,
                                     T~0))
 table(dementia_deaths$flag_alzheimers, dementia_deaths$flag_G30_codes)
-##none in combination so  ignore the g30 codes.
+##none in combination, including g30 codes to follow NRS methodology.
 dementia_deaths <- dementia_deaths %>%
-  mutate(dementia_alzheimers = case_when(substr(underlying_cause_of_death,1,3) =="F00"~1,
-                                     substr(cause_of_death_code_0,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_1,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_2,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_3,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_4,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_5,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_6,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_7,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_8,1,3)  =="F00"~1,
-                                     substr(cause_of_death_code_9,1,3)  =="F00"~1,
+  mutate(dementia_alzheimers = case_when(substr(underlying_cause_of_death,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_0,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_1,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_2,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_3,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_4,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_5,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_6,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_7,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_8,1,3) %in% c("F00", "G30") ~1,
+                                     substr(cause_of_death_code_9,1,3) %in% c("F00", "G30") ~1,
                                      T~0)) %>%
              mutate(vascular_dementia = case_when(substr(underlying_cause_of_death,1,3) =="F01"~1,
                                                   substr(cause_of_death_code_0,1,3)  =="F01"~1,
@@ -235,123 +238,123 @@ dementia_deaths  <- dementia_deaths  %>%
 ###pull out the relevant codes
 
 dementia_deaths  <- dementia_deaths  %>%
-  mutate(icd10_1 = case_when(underlying_cause_of_death %in% icd10_dementia |
+  mutate(icd10_1 = case_when(underlying_cause_of_death %in% icd10_dementia_deaths |
                                underlying_cause_of_death %in% dagger_code |
                                underlying_cause_of_death %in% fifth_char_codes ~ underlying_cause_of_death, 
-                             cause_of_death_code_0 %in% icd10_dementia |
+                             cause_of_death_code_0 %in% icd10_dementia_deaths |
                              cause_of_death_code_0 %in% dagger_code |
                              cause_of_death_code_0 %in% fifth_char_codes ~ cause_of_death_code_0,
-                             cause_of_death_code_1 %in% icd10_dementia |
+                             cause_of_death_code_1 %in% icd10_dementia_deaths  |
                                cause_of_death_code_1 %in% dagger_code |
                                cause_of_death_code_1 %in% fifth_char_codes ~ cause_of_death_code_1,
-                             cause_of_death_code_2 %in% icd10_dementia |
+                             cause_of_death_code_2 %in% icd10_dementia_deaths  |
                                cause_of_death_code_2 %in% dagger_code |
                                cause_of_death_code_2 %in% fifth_char_codes ~ cause_of_death_code_2,
-                             cause_of_death_code_3 %in% icd10_dementia |
+                             cause_of_death_code_3 %in% icd10_dementia_deaths  |
                                cause_of_death_code_3 %in% dagger_code |
                                cause_of_death_code_3 %in% fifth_char_codes ~ cause_of_death_code_3,
-                             cause_of_death_code_4 %in% icd10_dementia |
+                             cause_of_death_code_4 %in% icd10_dementia_deaths  |
                                cause_of_death_code_4 %in% dagger_code |
                                cause_of_death_code_4 %in% fifth_char_codes ~ cause_of_death_code_4,
-                             cause_of_death_code_5 %in% icd10_dementia |
+                             cause_of_death_code_5 %in% icd10_dementia_deaths  |
                                cause_of_death_code_5 %in% dagger_code |
                                cause_of_death_code_5 %in% fifth_char_codes ~ cause_of_death_code_5,
-                             cause_of_death_code_6 %in% icd10_dementia |
+                             cause_of_death_code_6 %in% icd10_dementia_deaths  |
                                cause_of_death_code_6 %in% dagger_code |
                                cause_of_death_code_6 %in% fifth_char_codes ~ cause_of_death_code_6,
-                             cause_of_death_code_7 %in% icd10_dementia |
+                             cause_of_death_code_7 %in% icd10_dementia_deaths  |
                                cause_of_death_code_7 %in% dagger_code |
                                cause_of_death_code_7 %in% fifth_char_codes ~ cause_of_death_code_7,
-                             cause_of_death_code_8 %in% icd10_dementia |
+                             cause_of_death_code_8 %in% icd10_dementia_deaths  |
                                cause_of_death_code_8 %in% dagger_code |
                                cause_of_death_code_8 %in% fifth_char_codes ~ cause_of_death_code_8,
-                             cause_of_death_code_9 %in% icd10_dementia |
+                             cause_of_death_code_9 %in% icd10_dementia_deaths  |
                                cause_of_death_code_9 %in% dagger_code |
                                cause_of_death_code_9 %in% fifth_char_codes ~ cause_of_death_code_9,
                              T~NA), 
-         icd10_2 = case_when((icd10_1 != cause_of_death_code_0 & cause_of_death_code_0 %in% icd10_dementia) |
+         icd10_2 = case_when((icd10_1 != cause_of_death_code_0 & cause_of_death_code_0 %in% icd10_dementia_deaths ) |
                              (icd10_1 != cause_of_death_code_0 & cause_of_death_code_0 %in% dagger_code) |
                              (icd10_1 != cause_of_death_code_0 & cause_of_death_code_0 %in% fifth_char_codes) ~ cause_of_death_code_0,
-                             (icd10_1 != cause_of_death_code_1 & cause_of_death_code_1 %in% icd10_dementia) |
+                             (icd10_1 != cause_of_death_code_1 & cause_of_death_code_1 %in% icd10_dementia_deaths ) |
                                (icd10_1 != cause_of_death_code_1 & cause_of_death_code_1 %in% dagger_code) |
                                (icd10_1 != cause_of_death_code_1 & cause_of_death_code_1 %in% fifth_char_codes) ~ cause_of_death_code_1,
-                             (icd10_1 != cause_of_death_code_2 & cause_of_death_code_2 %in% icd10_dementia) |
+                             (icd10_1 != cause_of_death_code_2 & cause_of_death_code_2 %in% icd10_dementia_deaths ) |
                                (icd10_1 != cause_of_death_code_2 & cause_of_death_code_2 %in% dagger_code) |
                                (icd10_1 != cause_of_death_code_2 & cause_of_death_code_2 %in% fifth_char_codes) ~ cause_of_death_code_2,
-                             (icd10_1 != cause_of_death_code_3 & cause_of_death_code_3 %in% icd10_dementia) |
+                             (icd10_1 != cause_of_death_code_3 & cause_of_death_code_3 %in% icd10_dementia_deaths ) |
                                (icd10_1 != cause_of_death_code_3 & cause_of_death_code_3 %in% dagger_code) |
                                (icd10_1 != cause_of_death_code_3 & cause_of_death_code_3 %in% fifth_char_codes) ~ cause_of_death_code_3,
-                             (icd10_1 != cause_of_death_code_4 & cause_of_death_code_4 %in% icd10_dementia) |
+                             (icd10_1 != cause_of_death_code_4 & cause_of_death_code_4 %in% icd10_dementia_deaths ) |
                                (icd10_1 != cause_of_death_code_4 & cause_of_death_code_4 %in% dagger_code) |
                                (icd10_1 != cause_of_death_code_4 & cause_of_death_code_4 %in% fifth_char_codes) ~ cause_of_death_code_4,
-                             (icd10_1 != cause_of_death_code_5 & cause_of_death_code_5 %in% icd10_dementia) |
+                             (icd10_1 != cause_of_death_code_5 & cause_of_death_code_5 %in% icd10_dementia_deaths ) |
                                (icd10_1 != cause_of_death_code_5 & cause_of_death_code_5 %in% dagger_code) |
                                (icd10_1 != cause_of_death_code_5 & cause_of_death_code_5 %in% fifth_char_codes) ~ cause_of_death_code_5,
-                             (icd10_1 != cause_of_death_code_6 & cause_of_death_code_6 %in% icd10_dementia) |
+                             (icd10_1 != cause_of_death_code_6 & cause_of_death_code_6 %in% icd10_dementia_deaths ) |
                                (icd10_1 != cause_of_death_code_6 & cause_of_death_code_6 %in% dagger_code) |
                                (icd10_1 != cause_of_death_code_6 & cause_of_death_code_6 %in% fifth_char_codes) ~ cause_of_death_code_6,
-                             (icd10_1 != cause_of_death_code_7 & cause_of_death_code_7 %in% icd10_dementia) |
+                             (icd10_1 != cause_of_death_code_7 & cause_of_death_code_7 %in% icd10_dementia_deaths ) |
                                (icd10_1 != cause_of_death_code_7 & cause_of_death_code_7 %in% dagger_code) |
                                (icd10_1 != cause_of_death_code_7 & cause_of_death_code_7 %in% fifth_char_codes) ~ cause_of_death_code_7,
-                             (icd10_1 != cause_of_death_code_8 & cause_of_death_code_8 %in% icd10_dementia) |
+                             (icd10_1 != cause_of_death_code_8 & cause_of_death_code_8 %in% icd10_dementia_deaths ) |
                                (icd10_1 != cause_of_death_code_8 & cause_of_death_code_8 %in% dagger_code) |
                                (icd10_1 != cause_of_death_code_8 & cause_of_death_code_8 %in% fifth_char_codes) ~ cause_of_death_code_8,
-                             (icd10_1 != cause_of_death_code_9 & cause_of_death_code_9 %in% icd10_dementia) |
+                             (icd10_1 != cause_of_death_code_9 & cause_of_death_code_9 %in% icd10_dementia_deaths ) |
                                (icd10_1 != cause_of_death_code_9 & cause_of_death_code_9 %in% dagger_code) |
                                (icd10_1 != cause_of_death_code_9 & cause_of_death_code_9 %in% fifth_char_codes) ~ cause_of_death_code_9,
                              T~NA) ,
-         icd10_3 = case_when( (icd10_1 != cause_of_death_code_1 & icd10_2 != cause_of_death_code_1 &cause_of_death_code_1 %in% icd10_dementia) |
+         icd10_3 = case_when( (icd10_1 != cause_of_death_code_1 & icd10_2 != cause_of_death_code_1 &cause_of_death_code_1 %in% icd10_dementia_deaths ) |
                                (icd10_1 != cause_of_death_code_1 & icd10_2 != cause_of_death_code_1 & cause_of_death_code_1 %in% dagger_code) |
                                (icd10_1 != cause_of_death_code_1 & icd10_2 != cause_of_death_code_1 & cause_of_death_code_1 %in% fifth_char_codes) ~ cause_of_death_code_1,
-                              (icd10_1 != cause_of_death_code_2 & icd10_2 != cause_of_death_code_2 &cause_of_death_code_2 %in% icd10_dementia) |
+                              (icd10_1 != cause_of_death_code_2 & icd10_2 != cause_of_death_code_2 &cause_of_death_code_2 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_2 & icd10_2 != cause_of_death_code_2 & cause_of_death_code_2 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_2 & icd10_2 != cause_of_death_code_2 & cause_of_death_code_2 %in% fifth_char_codes) ~ cause_of_death_code_2,
-                              (icd10_1 != cause_of_death_code_3 & icd10_2 != cause_of_death_code_3 &cause_of_death_code_3 %in% icd10_dementia) |
+                              (icd10_1 != cause_of_death_code_3 & icd10_2 != cause_of_death_code_3 &cause_of_death_code_3 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_3 & icd10_2 != cause_of_death_code_3 & cause_of_death_code_3 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_3 & icd10_2 != cause_of_death_code_3 & cause_of_death_code_3 %in% fifth_char_codes) ~ cause_of_death_code_3,
-                              (icd10_1 != cause_of_death_code_4 & icd10_2 != cause_of_death_code_4 &cause_of_death_code_4 %in% icd10_dementia) |
+                              (icd10_1 != cause_of_death_code_4 & icd10_2 != cause_of_death_code_4 &cause_of_death_code_4 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_4 & icd10_2 != cause_of_death_code_4 & cause_of_death_code_4 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_4 & icd10_2 != cause_of_death_code_4 & cause_of_death_code_4 %in% fifth_char_codes) ~ cause_of_death_code_4,
-                              (icd10_1 != cause_of_death_code_5 & icd10_2 != cause_of_death_code_5 &cause_of_death_code_5 %in% icd10_dementia) |
+                              (icd10_1 != cause_of_death_code_5 & icd10_2 != cause_of_death_code_5 &cause_of_death_code_5 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_5 & icd10_2 != cause_of_death_code_5 & cause_of_death_code_5 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_5 & icd10_2 != cause_of_death_code_5 & cause_of_death_code_5 %in% fifth_char_codes) ~ cause_of_death_code_5,
-                              (icd10_1 != cause_of_death_code_6 & icd10_2 != cause_of_death_code_6 &cause_of_death_code_6 %in% icd10_dementia) |
+                              (icd10_1 != cause_of_death_code_6 & icd10_2 != cause_of_death_code_6 &cause_of_death_code_6 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_6 & icd10_2 != cause_of_death_code_6 & cause_of_death_code_6 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_6 & icd10_2 != cause_of_death_code_6 & cause_of_death_code_6 %in% fifth_char_codes) ~ cause_of_death_code_6,
-                              (icd10_1 != cause_of_death_code_7 & icd10_2 != cause_of_death_code_7 &cause_of_death_code_7 %in% icd10_dementia) |
+                              (icd10_1 != cause_of_death_code_7 & icd10_2 != cause_of_death_code_7 &cause_of_death_code_7 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_7 & icd10_2 != cause_of_death_code_7 & cause_of_death_code_7 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_7 & icd10_2 != cause_of_death_code_7 & cause_of_death_code_7 %in% fifth_char_codes) ~ cause_of_death_code_7,
-                              (icd10_1 != cause_of_death_code_8 & icd10_2 != cause_of_death_code_8 &cause_of_death_code_8 %in% icd10_dementia) |
+                              (icd10_1 != cause_of_death_code_8 & icd10_2 != cause_of_death_code_8 &cause_of_death_code_8 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_8 & icd10_2 != cause_of_death_code_8 & cause_of_death_code_8 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_8 & icd10_2 != cause_of_death_code_8 & cause_of_death_code_8 %in% fifth_char_codes) ~ cause_of_death_code_8,
-                              (icd10_1 != cause_of_death_code_9 & icd10_2 != cause_of_death_code_9 &cause_of_death_code_9 %in% icd10_dementia) |
+                              (icd10_1 != cause_of_death_code_9 & icd10_2 != cause_of_death_code_9 &cause_of_death_code_9 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_9 & icd10_2 != cause_of_death_code_9 & cause_of_death_code_9 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_9 & icd10_2 != cause_of_death_code_9 & cause_of_death_code_9 %in% fifth_char_codes) ~ cause_of_death_code_9,
          ) ,
-         icd10_4 = case_when( (icd10_1 != cause_of_death_code_2 & icd10_2 != cause_of_death_code_2 & icd10_3 != cause_of_death_code_2 & cause_of_death_code_2 %in% icd10_dementia) |
+         icd10_4 = case_when( (icd10_1 != cause_of_death_code_2 & icd10_2 != cause_of_death_code_2 & icd10_3 != cause_of_death_code_2 & cause_of_death_code_2 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_2 & icd10_2 != cause_of_death_code_2 & icd10_3 != cause_of_death_code_2 & cause_of_death_code_2 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_2 & icd10_2 != cause_of_death_code_2 & icd10_3 != cause_of_death_code_2 & cause_of_death_code_2 %in% fifth_char_codes) ~ cause_of_death_code_2,
-                              (icd10_1 != cause_of_death_code_3 & icd10_2 != cause_of_death_code_3 & icd10_3 != cause_of_death_code_3 & cause_of_death_code_3 %in% icd10_dementia) |
+                              (icd10_1 != cause_of_death_code_3 & icd10_2 != cause_of_death_code_3 & icd10_3 != cause_of_death_code_3 & cause_of_death_code_3 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_3 & icd10_2 != cause_of_death_code_3 & icd10_3 != cause_of_death_code_3 & cause_of_death_code_3 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_3 & icd10_2 != cause_of_death_code_3 & icd10_3 != cause_of_death_code_3 & cause_of_death_code_3 %in% fifth_char_codes) ~ cause_of_death_code_3,
-                               (icd10_1 != cause_of_death_code_4 & icd10_2 != cause_of_death_code_4 & icd10_3 != cause_of_death_code_4 & cause_of_death_code_4 %in% icd10_dementia) |
+                               (icd10_1 != cause_of_death_code_4 & icd10_2 != cause_of_death_code_4 & icd10_3 != cause_of_death_code_4 & cause_of_death_code_4 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_4 & icd10_2 != cause_of_death_code_4 & icd10_3 != cause_of_death_code_4 & cause_of_death_code_4 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_4 & icd10_2 != cause_of_death_code_4 & icd10_3 != cause_of_death_code_4 & cause_of_death_code_4 %in% fifth_char_codes) ~ cause_of_death_code_4,
-                          (icd10_1 != cause_of_death_code_5 & icd10_2 != cause_of_death_code_5 & icd10_3 != cause_of_death_code_5 & cause_of_death_code_5 %in% icd10_dementia) |
+                          (icd10_1 != cause_of_death_code_5 & icd10_2 != cause_of_death_code_5 & icd10_3 != cause_of_death_code_5 & cause_of_death_code_5 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_5 & icd10_2 != cause_of_death_code_5 & icd10_3 != cause_of_death_code_5 & cause_of_death_code_5 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_5 & icd10_2 != cause_of_death_code_5 & icd10_3 != cause_of_death_code_5 & cause_of_death_code_5 %in% fifth_char_codes) ~ cause_of_death_code_5,
-                               (icd10_1 != cause_of_death_code_6 & icd10_2 != cause_of_death_code_6 & icd10_3 != cause_of_death_code_6 & cause_of_death_code_6 %in% icd10_dementia) |
+                               (icd10_1 != cause_of_death_code_6 & icd10_2 != cause_of_death_code_6 & icd10_3 != cause_of_death_code_6 & cause_of_death_code_6 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_6 & icd10_2 != cause_of_death_code_6 & icd10_3 != cause_of_death_code_6 & cause_of_death_code_6 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_6 & icd10_2 != cause_of_death_code_6 & icd10_3 != cause_of_death_code_6 & cause_of_death_code_6 %in% fifth_char_codes) ~ cause_of_death_code_6,
-                               (icd10_1 != cause_of_death_code_7 & icd10_2 != cause_of_death_code_7 & icd10_3 != cause_of_death_code_7 & cause_of_death_code_7 %in% icd10_dementia) |
+                               (icd10_1 != cause_of_death_code_7 & icd10_2 != cause_of_death_code_7 & icd10_3 != cause_of_death_code_7 & cause_of_death_code_7 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_7 & icd10_2 != cause_of_death_code_7 & icd10_3 != cause_of_death_code_7 & cause_of_death_code_7 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_7 & icd10_2 != cause_of_death_code_7 & icd10_3 != cause_of_death_code_7 & cause_of_death_code_7 %in% fifth_char_codes) ~ cause_of_death_code_7,
          
-                              (icd10_1 != cause_of_death_code_8 & icd10_2 != cause_of_death_code_8 & icd10_3 != cause_of_death_code_8 & cause_of_death_code_8 %in% icd10_dementia) |
+                              (icd10_1 != cause_of_death_code_8 & icd10_2 != cause_of_death_code_8 & icd10_3 != cause_of_death_code_8 & cause_of_death_code_8 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_8 & icd10_2 != cause_of_death_code_8 & icd10_3 != cause_of_death_code_8 & cause_of_death_code_8 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_8 & icd10_2 != cause_of_death_code_8 & icd10_3 != cause_of_death_code_8 & cause_of_death_code_8 %in% fifth_char_codes) ~ cause_of_death_code_8,
          
-                              (icd10_1 != cause_of_death_code_9 & icd10_2 != cause_of_death_code_9 & icd10_3 != cause_of_death_code_9 & cause_of_death_code_9 %in% icd10_dementia) |
+                              (icd10_1 != cause_of_death_code_9 & icd10_2 != cause_of_death_code_9 & icd10_3 != cause_of_death_code_9 & cause_of_death_code_9 %in% icd10_dementia_deaths ) |
                                 (icd10_1 != cause_of_death_code_9 & icd10_2 != cause_of_death_code_9 & icd10_3 != cause_of_death_code_9 & cause_of_death_code_9 %in% dagger_code) |
                                 (icd10_1 != cause_of_death_code_9 & icd10_2 != cause_of_death_code_9 & icd10_3 != cause_of_death_code_9 & cause_of_death_code_9 %in% fifth_char_codes) ~ cause_of_death_code_9,T~NA
          )) 
