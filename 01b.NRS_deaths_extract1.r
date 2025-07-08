@@ -9,7 +9,8 @@ source("00.setup.r")
 deaths_temp_1 <- as_tibble(
   dbGetQuery(
     SMRAConnection, paste0(
-      "SELECT UPI_NUMBER,CHI, DATE_OF_DEATH, ETHNICITY_CODE,
+      "SELECT UPI_NUMBER,CHI, DATE_OF_BIRTH, DATE_OF_DEATH, AGE, AGE_UNITS, ETHNICITY_CODE,
+      ETHNICITY_INDICATOR,
      YEAR_OF_REGISTRATION , REGISTRATION_DISTRICT, ENTRY_NUMBER ,
     UNDERLYING_CAUSE_OF_DEATH ,
     CAUSE_OF_DEATH_CODE_0 ,CAUSE_OF_DEATH_CODE_1 ,CAUSE_OF_DEATH_CODE_2,
@@ -26,7 +27,7 @@ deaths_temp_1 <- as_tibble(
   mutate(upi_number = case_when(is.na(upi_number) ~chi, T~upi_number)) %>%
   filter(!is.na(upi_number))
 
-
+#table(deaths_temp_1$ethnicity_indicator, deaths_temp_1$ethnicity_code)
 
 #####################################################
 
@@ -363,7 +364,7 @@ dementia_deaths  <- dementia_deaths  %>%
 
 ##prefix names
 dementia_deaths <- dementia_deaths %>% 
-  select(upi_number, date_of_death, sex, postcode,institution,health_board_area, ethnicity_code,
+  select(upi_number,date_of_birth, date_of_death, sex, postcode,institution,health_board_area, ethnicity_code,
          dementia_subtype_1, dementia_subtype_2, icd10_1, icd10_2, icd10_3, icd10_4) %>% 
   mutate(date_type = "date of death", source= "NRS deaths") 
 ###save dementia deaths extract####
