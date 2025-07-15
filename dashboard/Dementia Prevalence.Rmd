@@ -111,18 +111,95 @@ datatable(shared_prev_source, options = list(dom = 't'),
           rownames = F)
 ```
 
-# Deaths
+# Deaths with dementia
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+```{r filter_section deaths with}
+# deaths_filter_select
+filter_select("area_select2", "Select an Area",
+                                    shared_all_deaths_with_table, group = ~area, allLevels = T, multiple = F)
+```
+
+The figures included in this tab show dementia and non-dementia deaths. The figures show the proportion of deaths of those aged 65+ that were partially attributed to by dementia.
+
+Row
+-----------------------------------------------------------------------
+
+### Deaths of those aged 65+
+```{r all deaths with 65+}
+datatable(shared_all_deaths_with_table, options = list(dom = 't'),
+          rownames = F)
+```
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Proportion of deaths to that were attributed to dementia - age group (65+ only)
+```{r proportion with chart age}
+plot_ly(shared_deaths_with_chart_age, x = ~year, y = ~proportion, split = ~rev(age_group), meta = ~age_group, hovertext = ~proportion, type = 'bar', 
+        color = ~age_group, #colors = c("#9B4393", "#0078D4"),
+        hovertemplate = paste0("%{x} <br>", "Age Group: %{meta} <br>", "Proportion of deaths attributed to dementia: %{hovertext}% <br>")) %>% 
+  layout(clickmode = "none", showlegend = FALSE, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Year", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "%", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+### Table
+```{r proportion with table age}
+datatable(shared_deaths_with_chart_age, options = list(dom = 't'),
+          rownames = F)
+```
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Proportion of deaths to to those that were attributed to dementia - gender (65+ only)
+```{r proportion with chart gender}
+plot_ly(shared_deaths_with_chart_gender, x = ~year, y = ~proportion, split = ~gender, meta = ~gender, hovertext = ~proportion, type = 'bar', 
+        color = ~gender, colors = c("#9B4393", "#0078D4"),
+        hovertemplate = paste0("%{x} <br>", "Gender: %{meta} <br>", "Proportion of deaths attributed to dementia: %{hovertext}% <br>")) %>% 
+  layout(clickmode = "none", showlegend = FALSE, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Year", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "%", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+### Table
+```{r proportion with table gender}
+datatable(shared_deaths_with_chart_gender, options = list(dom = 't'),
+          rownames = F)
+```
+
+# Deaths mentioning dementia
 
 Inputs {.sidebar}
 -----------------------------------------------------------------------
 
 ```{r filter_section deaths}
 # deaths_filter_select
-filter_select("area_select2", "Select an Area",
-                                    shared_all_deaths_table, group = ~area, allLevels = T, multiple = F)
+filter_select("area_select3", "Select an Area",
+                                    shared_all_deaths_with_table, group = ~area, allLevels = T, multiple = F)
 ```
 
-The figures included in this tab show dementia and non-dementia deaths. The figures show the proportion of deaths of those aged 65+ that were partially attributed to by dementia.
+The figures included in this tab show dementia and non-dementia deaths. The figures show the proportion of deaths of those aged 65+ that mentioned dementia on their death certificate.
 
 Row
 -----------------------------------------------------------------------
@@ -188,6 +265,7 @@ datatable(shared_deaths_chart_gender, options = list(dom = 't'),
           rownames = F)
 ```
 
+
 ```{js }
 function filter_default() {
 
@@ -201,6 +279,12 @@ function filter_default() {
   [0].selectize.removeOption("");
   
   document.getElementById("area_select2").getElementsByClassName("selectized") 
+  [0].selectize.setValue("Aberdeen City", false);
+  
+  document.getElementById("area_select3").getElementsByClassName("selectized")
+  [0].selectize.removeOption("");
+  
+  document.getElementById("area_select3").getElementsByClassName("selectized") 
   [0].selectize.setValue("Aberdeen City", false);
   
   }
