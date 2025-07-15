@@ -370,11 +370,10 @@ shared_prev_source <- SharedData$new(prev_all_source %>% rename(area = ca2019nam
 
 prev_filter_select <- filter_select("area_select1", "Select an Area",
                                     shared_prev_65plus_chart, group = ~area, multiple = F)
-deaths_filter_select <- filter_select("area_select2", "Select an Area",
-                                    shared_all_deaths_table, group = ~area, multiple = F)
 
 ## Deaths ####
-deaths_data
+# deaths_data
+
 # all by year
 shared_all_deaths_table <- SharedData$new(
   deaths_data %>% 
@@ -388,6 +387,9 @@ shared_all_deaths_table <- SharedData$new(
     select(year, area, dementia, non_dementia, all_deaths, proportion_to_dementia),
   key = ~area, group = "Group 2"
 )
+
+deaths_filter_select <- filter_select("area_select2", "Select an Area",
+                                      shared_all_deaths_table, group = ~area, multiple = F)
 
 shared_deaths_chart_age <- SharedData$new(
   deaths_data %>%
@@ -415,17 +417,10 @@ shared_deaths_chart_gender <- SharedData$new(
   key = ~area, group = "Group 2"
 )
 
-
-
-
-# knit_rmd <- function(){
-#   rmarkdown::render("/PHI_conf/Dementia_Index/code/Kwaku/other/flexdashboard replication/Dementia Prevalence.Rmd",
-#                     output_dir = "/PHI_conf/Dementia_Index/code/Kwaku/other/flexdashboard replication/")
-# }
-
 knit_rmd <- function(){
-  rmarkdown::render("/PHI_conf/Dementia_Index/outputs/HSCP dashboard/Dementia Prevalence.Rmd",
-                    output_dir = "/PHI_conf/Dementia_Index/outputs/HSCP dashboard/")
+  rmarkdown::render(paste0(here(), "/dashboard/Dementia Prevalence.Rmd"),
+                    output_dir = "/PHI_conf/Dementia_Index/outputs/HSCP dashboard/",
+                    output_file = paste0("Dementia Prevalence_", format(Sys.Date(), "%Y_%m_%d"), ".html"))
 }
 
 bscols(
