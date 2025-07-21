@@ -48,9 +48,6 @@ index_ca <- index %>%
   mutate(age_group = create_age_groups(age_at_eoy, from = 0, to = 90, by = 5, as_factor = TRUE),
          year = extract_fin_year(diagnosis_date))
 
-
-age_calculate(dmy(10101990), dmy(31032025))
-
 age_order <- c("0-59", create_age_groups(seq(60, 90, by=5), 60, 90, by = 5, as_factor = F))
 
 index_ca %<>% 
