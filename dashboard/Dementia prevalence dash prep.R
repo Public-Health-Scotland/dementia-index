@@ -19,50 +19,29 @@ library(crosstalk)
 library(DT)
 
 # Dementia index
-index <- readRDS('/PHI_conf/Dementia_Index/data/INDEX/dementia_index_first_incidence_only.rds')
-index_all <- readRDS('/PHI_conf/Dementia_Index/data/INDEX/dementia_index.rds')
+index <- readRDS('/PHI_conf/Dementia_Index/data/INDEX/dementia_index.rds')
+index_first <- readRDS('/PHI_conf/Dementia_Index/data/INDEX/dementia_index_first_incidence_only.rds')
 
-index %>%
-  mutate(year = extract_fin_year(diagnosis_date)) %>% 
-  summarise(individuals = n(),
-            .by = c(year, ca2019name, source)) %>%
-  filter(year>=2014, ca2019name == 'Inverclyde') %>% 
-  arrange(source, year, ca2019name) #%>% 
-# View()
-
-index_all %>%
-  mutate(year = extract_fin_year(diagnosis_date)) %>% 
-  summarise(individuals = n(),
-            .by = c(year, ca2019name, source)) %>%
-  filter(year>=2014, ca2019name == 'Inverclyde') %>% 
-  arrange(source, year, ca2019name) %>% 
-  View()
+# index_first %>%
+#   mutate(year = extract_fin_year(diagnosis_date)) %>% 
+#   summarise(individuals = n(),
+#             .by = c(year, ca2019name, source)) %>%
+#   filter(year>=2014, ca2019name == 'Inverclyde') %>% 
+#   arrange(source, year, ca2019name)
+# 
+# index %>%
+#   mutate(year = extract_fin_year(diagnosis_date)) %>% 
+#   summarise(individuals = n(),
+#             .by = c(year, ca2019name, source)) %>%
+#   filter(year>=2014, ca2019name == 'Inverclyde') %>% 
+#   arrange(source, year, ca2019name)
 
 # Number of individuals identified as having dementia by financial year, age group, gender & HSCP ####
-index_ca <- index %>% 
-  filter(
-    # previous IR data ranged from 2014/15 - 2021/22
-    # diagnosis_date >= dmy(01042014),
-    !is.na(ca2019name)) %>% 
-  
-  mutate(age_group = create_age_groups(age_at_eoy, from = 0, to = 90, by = 5, as_factor = TRUE),
-         year = extract_fin_year(diagnosis_date))
-
 age_order <- c("0-59", create_age_groups(seq(60, 90, by=5), 60, 90, by = 5, as_factor = F))
-
-index_ca %<>% 
-  mutate(age_group = case_when(age_group < "60-64" ~ "0-59",
-                               .default = as.character(age_group)),
-         age_group = factor(age_group, levels = age_order, ordered = T),
-         gender = case_when(sex == 1 ~ 'Male',
-                            sex == 2 ~ "Female",
-                            .default = NA))
 
 dates <- dmy(31032015)
 dates <- seq.Date(dates, dates+years(9), by = 'year')
-fy_dates <- sort(unique(index_ca$year))[6:15]
-
-age_calculate(dmy(10101990), dates[10])
+fy_dates <- sort(unique(extract_fin_year(index$diagnosis_date)))[6:15]
 
 # function to get prevalence by year
 prev_df <- function(df, date_end_yr){
@@ -70,6 +49,7 @@ prev_df <- function(df, date_end_yr){
   df <- df %>%
     # calculate age at end of the financial year
     mutate(age_at_eoy = age_calculate(date_of_birth), date_end_yr,
+           # age_group = create_age_groups(age_at_diagnosis, from = 0, to = 90, by = 5, as_factor = TRUE),
            age_group = create_age_groups(age_at_eoy, from = 0, to = 90, by = 5, as_factor = TRUE),
            age_group = case_when(age_group < "60-64" ~ "0-59",
                                  .default = as.character(age_group)),
@@ -100,7 +80,23 @@ prev_df <- function(df, date_end_yr){
 ## bind all years of interest together ####
 ### number with source ####
 prevalence_ca_source <- bind_rows(lapply(dates, prev_df, df = index))
-# prevalence_ca_source2 <- bind_rows(lapply(dates, prev_df2, df = index_ca))
+prev_ca_source_first <- bind_rows(lapply(dates, prev_df, df = index_first))
+
+
+prev_sc_totals <- prev_ca_source_first %>% 
+  mutate(ca2019name = 'Scotland') %>% 
+  summarise(individuals = sum(individuals),
+            .by = c(year, ca2019name)) %>% 
+  mutate(source = 'Patient Total') %>% 
+  arrange(year, ca2019name, source) %>% 
+  pivot_wider(names_from = source, values_from = individuals, values_fill = 0)
+
+prev_ca_totals <- prev_ca_source_first %>% 
+      summarise(individuals = sum(individuals),
+                .by = c(year, ca2019name)) %>% 
+      mutate(source = 'Patient Total') %>% 
+      arrange(ca2019name, year, source) %>% 
+      pivot_wider(names_from = source, values_from = individuals, values_fill = 0)
 
 # Scotland figures
 prev_sc_source <- prevalence_ca_source %>%
@@ -108,8 +104,8 @@ prev_sc_source <- prevalence_ca_source %>%
   summarise(individuals = sum(individuals),
             .by = c(year, ca2019name, source)) %>%
   arrange(year, ca2019name, source) %>% 
-  pivot_wider(names_from = source, values_from = individuals, values_fill = 0)
-
+  pivot_wider(names_from = source, values_from = individuals, values_fill = 0) %>% 
+  left_join(prev_sc_totals)
 
 prev_all_source <- prev_sc_source %>% 
   bind_rows(
@@ -118,11 +114,12 @@ prev_all_source <- prev_sc_source %>%
       summarise(individuals = sum(individuals),
                 .by = c(year, ca2019name, source)) %>%
       arrange(year, ca2019name, source) %>% 
-      pivot_wider(names_from = source, values_from = individuals, values_fill = 0)) %>% 
-  adorn_totals(where = 'col')
+      pivot_wider(names_from = source, values_from = individuals, values_fill = 0) %>% 
+      left_join(prev_ca_totals)
+    )
 
 ### numbers w/o source ####
-prevalence_ca <- prevalence_ca_source %>% 
+prevalence_ca <- prev_ca_source_first %>% 
   select(-source) %>% 
   summarise(individuals = sum(individuals),
             .by = c(year, ca2019name, age_group, gender)) %>% 
@@ -246,7 +243,6 @@ all_deaths <- bind_rows(
 ) %>% 
   arrange(ca2019name, year, age_group, sex)
 
-## Died of dementia ####
 deaths_extract_index_g30 <- readRDS('/PHI_conf/Dementia_Index/data/extracts/dementia_deaths_incl_G30.rds')
 # deaths_extract_index <- readRDS('/PHI_conf/Dementia_Index/data/extracts/dementia_deaths.rds')
 
@@ -254,45 +250,46 @@ spd <- get_spd(col_select = c("pc7", "ca2019name", "hscp2018")) %>%
   transmute(pc7, ca2019name, hscp2018name = match_area(hscp2018)) %>% 
   rename(postcode = pc7)
 
-deaths_extract_index <- deaths_extract_index_g30 %>%
-  filter(between(date_of_death, cohort_start_date, dmy(31032024)),
-         age >= 65) %>% 
-  mutate(year = extract_fin_year(date_of_death),
-         age_group = create_age_groups(age, from = 65, to = 90, by = 5, as_factor = TRUE),
-         g30_only = case_when(flag_G30_codes == 1 & flag_dementia == 0 ~ 1,
-                              .default = 0)) %>% 
-  left_join(spd)
-
-deaths_w_g30 <- deaths_extract_index %>% 
-  summarise(dementia_deaths = n(), .by = c(ca2019name, year, age_group, sex)) %>% 
-  arrange(ca2019name)
-
-deaths_excl_g30 <- deaths_extract_index %>% 
-  filter(g30_only == 0) %>% 
-  summarise(dementia_deaths_excl_g30 = n(), .by = c(ca2019name, year, age_group, sex)) %>% 
-  arrange(ca2019name)
-
-deaths_index_ca <- deaths_w_g30 %>% 
-  left_join(deaths_excl_g30)
-
-deaths_index <- bind_rows(
-  deaths_index_ca %>% 
-    mutate(ca2019name = 'Scotland') %>% 
-    summarise(dementia_deaths = sum(dementia_deaths),
-              dementia_deaths_excl_g30 = sum(dementia_deaths_excl_g30),
-              .by = c(ca2019name, year, age_group, sex)),
-  
-  deaths_index_ca) %>% 
-  mutate(dementia_deaths_excl_g30 = case_when(is.na(dementia_deaths_excl_g30) ~ 0,
-                                              .default = dementia_deaths_excl_g30))
-
-deaths_of_data <- all_deaths %>% 
-  left_join(deaths_index) %>% 
-  mutate(proportion_to_dementia = dementia_deaths/deaths) %>% 
-  filter(year > "2013/14")
+## Died of dementia #### - not including
+# deaths_extract_index <- deaths_extract_index_g30 %>%
+#   filter(between(date_of_death, cohort_start_date, dmy(31032024)),
+#          age >= 65) %>% 
+#   mutate(year = extract_fin_year(date_of_death),
+#          age_group = create_age_groups(age, from = 65, to = 90, by = 5, as_factor = TRUE),
+#          g30_only = case_when(flag_G30_codes == 1 & flag_dementia == 0 ~ 1,
+#                               .default = 0)) %>% 
+#   left_join(spd)
+# 
+# deaths_w_g30 <- deaths_extract_index %>% 
+#   summarise(dementia_deaths = n(), .by = c(ca2019name, year, age_group, sex)) %>% 
+#   arrange(ca2019name)
+# 
+# deaths_excl_g30 <- deaths_extract_index %>% 
+#   filter(g30_only == 0) %>% 
+#   summarise(dementia_deaths_excl_g30 = n(), .by = c(ca2019name, year, age_group, sex)) %>% 
+#   arrange(ca2019name)
+# 
+# deaths_index_ca <- deaths_w_g30 %>% 
+#   left_join(deaths_excl_g30)
+# 
+# deaths_index <- bind_rows(
+#   deaths_index_ca %>% 
+#     mutate(ca2019name = 'Scotland') %>% 
+#     summarise(dementia_deaths = sum(dementia_deaths),
+#               dementia_deaths_excl_g30 = sum(dementia_deaths_excl_g30),
+#               .by = c(ca2019name, year, age_group, sex)),
+#   
+#   deaths_index_ca) %>% 
+#   mutate(dementia_deaths_excl_g30 = case_when(is.na(dementia_deaths_excl_g30) ~ 0,
+#                                               .default = dementia_deaths_excl_g30))
+# 
+# deaths_of_data <- all_deaths %>% 
+#   left_join(deaths_index) %>% 
+#   mutate(proportion_to_dementia = dementia_deaths/deaths) %>% 
+#   filter(year > "2013/14")
 
 ## Died with dementia ####
-died_with_dem <- index_ca %>% 
+died_with_dem <- index_first %>% 
   filter(!is.na(date_of_death)) %>% 
   mutate(age_at_death = age_calculate(date_of_birth, date_of_death)) %>% 
   filter(age_at_death >= 65) %>% 
@@ -319,7 +316,6 @@ deaths_with_data <- all_deaths %>%
   filter(year > "2013/14")
 
 # R markdown objects ####
-
 theme_dash <- function() {
   theme(panel.background = element_blank(),
         panel.grid.major.y = element_line(colour = 'lightgrey', linewidth = .25),
@@ -379,7 +375,7 @@ shared_prev_all_rate <- SharedData$new(
     mutate(rate = round_half_up((individuals/pop)*100000, 0)) %>% 
     select(-c(individuals, pop)) %>%
     pivot_wider(names_from = age_group, values_from = rate, values_fill = 0),
-  key = ~area, group = "Group 2"
+  key = ~area, group = "Group 1"
 )  
 
 shared_prev_source <- SharedData$new(prev_all_source %>% rename(area = ca2019name),
@@ -409,11 +405,12 @@ shared_all_deaths_with_table <- SharedData$new(
   deaths_with_data %>% 
     summarise(dementia = sum(dementia, na.rm = T),
               all_deaths = sum(deaths, na.rm = T),
+              non_dementia = all_deaths - dementia,
               proportion_to_dementia = round_half_up((dementia/all_deaths)*100, digits = 0),
               .by = c(year, ca2019name)) %>% 
     # mutate() %>% 
     rename(area = ca2019name) %>% 
-    select(year, area, dementia, all_deaths, proportion_to_dementia),
+    select(year, area, dementia, non_dementia, all_deaths, proportion_to_dementia),
   key = ~area, group = "Group 3"
 )
 
@@ -424,42 +421,43 @@ shared_all_deaths_with_table <- SharedData$new(
 # deaths_filter_select2 <- filter_select("area_select3", "Select an Area",
 #                                        shared_all_deaths_table, group = ~area, multiple = F)
 
-shared_deaths_chart_age <- SharedData$new(
-  deaths_of_data %>%
-    summarise(dementia = sum(dementia_deaths, na.rm = T),
+# shared_deaths_chart_age <- SharedData$new(
+#   deaths_of_data %>%
+#     summarise(dementia = sum(dementia_deaths, na.rm = T),
+#               all_deaths = sum(deaths, na.rm = T),
+#               non_dementia = all_deaths - dementia,
+#               proportion = round_half_up((dementia/all_deaths)*100, digits = 0),
+#               .by = c(year, ca2019name, age_group)) %>%
+#     rename(area = ca2019name) %>%
+#     select(year, area, age_group, dementia, non_dementia, all_deaths, proportion),
+#   key = ~area, group = "Group 2"
+# )
+
+shared_deaths_with_chart_age <- SharedData$new(
+  deaths_with_data %>%
+    summarise(dementia = sum(dementia, na.rm = T),
               all_deaths = sum(deaths, na.rm = T),
               non_dementia = all_deaths - dementia,
               proportion = round_half_up((dementia/all_deaths)*100, digits = 0),
               .by = c(year, ca2019name, age_group)) %>%
     rename(area = ca2019name) %>%
     select(year, area, age_group, dementia, non_dementia, all_deaths, proportion),
-  key = ~area, group = "Group 2"
-)
-
-shared_deaths_with_chart_age <- SharedData$new(
-  deaths_with_data %>%
-    summarise(dementia = sum(dementia, na.rm = T),
-              all_deaths = sum(deaths, na.rm = T),
-              proportion = round_half_up((dementia/all_deaths)*100, digits = 0),
-              .by = c(year, ca2019name, age_group)) %>%
-    rename(area = ca2019name) %>%
-    select(year, area, age_group, dementia, all_deaths, proportion),
   key = ~area, group = "Group 3"
 )
 
-shared_deaths_chart_gender <- SharedData$new(
-  deaths_of_data %>%
-    mutate(gender = case_when(sex == 1 ~ 'Male',
-                              .default = 'Female')) %>% 
-    summarise(dementia = sum(dementia_deaths, na.rm = T),
-              all_deaths = sum(deaths, na.rm = T),
-              non_dementia = all_deaths - dementia,
-              proportion = round_half_up((dementia/all_deaths)*100, digits = 0),
-              .by = c(year, ca2019name, gender)) %>%
-    rename(area = ca2019name) %>%
-    select(year, area, gender, dementia, non_dementia, all_deaths, proportion),
-  key = ~area, group = "Group 2"
-)
+# shared_deaths_chart_gender <- SharedData$new(
+#   deaths_of_data %>%
+#     mutate(gender = case_when(sex == 1 ~ 'Male',
+#                               .default = 'Female')) %>% 
+#     summarise(dementia = sum(dementia_deaths, na.rm = T),
+#               all_deaths = sum(deaths, na.rm = T),
+#               non_dementia = all_deaths - dementia,
+#               proportion = round_half_up((dementia/all_deaths)*100, digits = 0),
+#               .by = c(year, ca2019name, gender)) %>%
+#     rename(area = ca2019name) %>%
+#     select(year, area, gender, dementia, non_dementia, all_deaths, proportion),
+#   key = ~area, group = "Group 2"
+# )
 
 shared_deaths_with_chart_gender <- SharedData$new(
   deaths_with_data %>%
@@ -467,10 +465,11 @@ shared_deaths_with_chart_gender <- SharedData$new(
                               .default = 'Female')) %>% 
     summarise(dementia = sum(dementia, na.rm = T),
               all_deaths = sum(deaths, na.rm = T),
+              non_dementia = all_deaths - dementia,
               proportion = round_half_up((dementia/all_deaths)*100, digits = 0),
               .by = c(year, ca2019name, gender)) %>%
     rename(area = ca2019name) %>%
-    select(year, area, gender, dementia, all_deaths, proportion),
+    select(year, area, gender, dementia, non_dementia, all_deaths, proportion),
   key = ~area, group = "Group 3"
 )
 
@@ -480,121 +479,4 @@ knit_rmd <- function(){
                     output_file = paste0("Dementia Prevalence_", format(Sys.Date(), "%Y_%m_%d"), ".html"))
 }
 
-bscols(
-  widths = c(1, 2, 15),
-  NULL,
-  prev_filter_select,
-  # datatable(shared_prev_65plus_table,
-  #           options = list(dom = 't'),
-  #           rownames = F)
-  
-  plot_ly(shared_prev_65plus_chart, x = ~year, y = ~individuals, meta = ~gender, hovertext = ~individuals, type = 'bar', 
-          color = ~gender, colors = c("#9B4393", "#0078D4"),
-          hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
-    layout(clickmode = "none", showlegend = FALSE, margin = list(l = -5, b = 10, t = 40),
-           xaxis = list(title = "Integration Authority Area", showline = FALSE, linecolor = "#b3b3b3",
-                        categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-           yaxis = list(title = "% Population 65+", linecolor = "#b3b3b3", titlefont = list(size = 16))
-    ) %>%
-    config(displayModeBar = TRUE, doubleClick = F,
-           modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
-                                         'zoomOut2d', 'autoScale2d', 
-                                         'toggleSpikelines', 
-                                         'hoverCompareCartesian', 
-                                         'hoverClosestCartesian', 'toImage'), 
-           displaylogo = F, editable = F)
-)
-
-### 65 plus table and column chart ####
-#### table ####
-prevalence_all_65plus %>% 
-  select(year, ca2019name, gender, individuals) %>% 
-  pivot_wider(names_from = gender, values_from = individuals) %>% 
-  adorn_totals(where = 'col') %>% clean_names() %>% 
-  relocate(female, .before = male) %>% 
-  filter(ca2019name == 'Scotland') %>% 
-  datatable(options = list(dom = 't'),
-            rownames = F)
-
-#### chart ####
-ggplotly(ggplot(prevalence_all_65plus %>% filter(ca2019name == 'Scotland')) +
-           geom_bar(mapping = aes(x = year, y = individuals, fill = gender,
-                                  text = paste0(str_to_title(gender), ": ", age_group, "<br>",
-                                                "Individuals: ", individuals)), 
-                    stat = 'identity', position = position_dodge()) +
-           labs(x="", y="") +
-           scale_y_continuous(expand = c(0,0)) +
-           theme_dash(),
-         tooltip = 'text', dynamicTicks = TRUE) %>% 
-  config(modeBarButtonsToRemove = bttn_remove, displaylogo = FALSE)
-
-#### rate chart ####
-plot_ly(prevalence_all_65plus_rates %>% filter(ca2019name == 'Scotland'), x = ~year, y = ~rate_100000, meta = ~gender, hovertext = ~individuals, 
-        type = 'scatter', mode = 'lines', color = ~gender, colors = c("#9B4393", "#0078D4"),
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
-  layout(clickmode = "none", showlegend = FALSE, margin = list(l = -5, b = 10, t = 40),
-         xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
-                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence rate per 100,000 pop (Aged 65+)", linecolor = "#b3b3b3", titlefont = list(size = 16))
-  ) %>%
-  config(displayModeBar = TRUE, doubleClick = F,
-         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
-                                       'zoomOut2d', 'autoScale2d', 
-                                       'toggleSpikelines', 
-                                       'hoverCompareCartesian', 
-                                       'hoverClosestCartesian', 'toImage'), 
-         displaylogo = F, editable = F)
-
-ggplot(prevalence_all_65plus_rates %>% filter(ca2019name == 'Scotland')) +
-  geom_line(aes(x = year, y = rate_100000, group = gender, colour = gender), stat = "identity", size = 1, linetype = "solid") +
-  labs(x = "Year", y = "Prevalence rate per 100,000 pop (Aged 65+)") +
-  # scale_colour_manual(values = chart_colours_hscp) +
-  scale_y_continuous(expand = c(0,0), limits = c(0, NA))+#, labels = comma_format(big.mark = ",")) +
-  # scale_x_date(expand = c(0,0.3)) +
-  theme_dash()
-
-#### rate chart table ####
-prevalence_all_65plus_rates %>% 
-  select(year, ca2019name, gender, rate_100000) %>% 
-  filter(ca2019name == 'Scotland') %>% 
-  mutate(rate = round_half_up(rate_100000, 0)) %>% 
-  select(-rate_100000) %>% 
-  pivot_wider(names_from = year, values_from = rate) %>% 
-  # adorn_totals(where = 'row') %>%
-  datatable(options = list(dom = 't'),
-            rownames = F)
-
-#### age groups - totals ####
-
-
-#### age groups - rates #### 
-
-
-#### Totals by source ####
-prev_all_source %>% 
-  rename(Year = year, Area = ca2019name) %>% 
-  datatable(options = list(dom = 't'),
-            rownames = F)
-
-#### % by source ####
-
-
-## Deaths ####
-
-
-
-plot_ly(deaths_by_age, x = ~year, y = ~proportion, split = ~rev(age_group), meta = ~age_group, hovertext = ~dementia_deaths, type = 'bar', 
-        color = ~age_group, #colors = c("#9B4393", "#0078D4"),
-        hovertemplate = paste0("%{x} <br>", "Age Group: %{meta} <br>", "Proportion of deaths attributed to dementia: %{hovertext}% <br>")) %>% 
-  layout(clickmode = "none", showlegend = FALSE, margin = list(l = -5, b = 10, t = 40),
-         xaxis = list(title = "Year", showline = FALSE, linecolor = "#b3b3b3",
-                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "%", linecolor = "#b3b3b3", titlefont = list(size = 16))
-  ) %>%
-  config(displayModeBar = TRUE, doubleClick = F,
-         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
-                                       'zoomOut2d', 'autoScale2d', 
-                                       'toggleSpikelines', 
-                                       'hoverCompareCartesian', 
-                                       'hoverClosestCartesian', 'toImage'), 
-         displaylogo = F, editable = F)
+knit_rmd()
