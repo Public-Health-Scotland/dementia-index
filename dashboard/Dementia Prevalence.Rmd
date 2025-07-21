@@ -111,7 +111,7 @@ datatable(shared_prev_source, options = list(dom = 't'),
           rownames = F)
 ```
 
-# Deaths with dementia
+# Deaths
 
 Inputs {.sidebar}
 -----------------------------------------------------------------------

@@ -49,8 +49,9 @@ prev_df <- function(df, date_end_yr){
   df <- df %>%
     # calculate age at end of the financial year
     mutate(age_at_eoy = age_calculate(date_of_birth), date_end_yr,
-           # age_group = create_age_groups(age_at_diagnosis, from = 0, to = 90, by = 5, as_factor = TRUE),
-           age_group = create_age_groups(age_at_eoy, from = 0, to = 90, by = 5, as_factor = TRUE),
+           # inv dash looks like it use one instance of age and not calculating at each year from SLF
+           age_group = create_age_groups(age_at_diagnosis, from = 0, to = 90, by = 5, as_factor = TRUE),
+           # age_group = create_age_groups(age_at_eoy, from = 0, to = 90, by = 5, as_factor = TRUE),
            age_group = case_when(age_group < "60-64" ~ "0-59",
                                  .default = as.character(age_group)),
            age_group = factor(age_group, levels = age_order, ordered = T),
@@ -207,7 +208,7 @@ cohort_start_date <- dmy(01012014)
 SMRAConnection <- dbConnect(odbc(),
                             dsn = "SMRA",
                             uid = Sys.info()[["user"]], # Assumes the user's SMR01 username is the same as their R server username
-                            pwd = keyring::key_get("SMRA", Sys.info()[["user"]], keyring = "DATABASE"))
+                            pwd = .rs.askForPassword("Enter your LDAP password"))
 
 
 deaths <- as_tibble(
@@ -388,18 +389,18 @@ prev_filter_select <- filter_select("area_select1", "Select an Area",
 # deaths_data
 
 # all by year
-shared_all_deaths_table <- SharedData$new(
-  deaths_of_data %>% 
-    summarise(dementia = sum(dementia_deaths, na.rm = T),
-              all_deaths = sum(deaths, na.rm = T),
-              non_dementia = all_deaths - dementia,
-              proportion_to_dementia = round_half_up((dementia/all_deaths)*100, digits = 0),
-              .by = c(year, ca2019name)) %>% 
-    # mutate() %>% 
-    rename(area = ca2019name) %>% 
-    select(year, area, dementia, non_dementia, all_deaths, proportion_to_dementia),
-  key = ~area, group = "Group 2"
-)
+# shared_all_deaths_table <- SharedData$new(
+#   deaths_of_data %>% 
+#     summarise(dementia = sum(dementia_deaths, na.rm = T),
+#               all_deaths = sum(deaths, na.rm = T),
+#               non_dementia = all_deaths - dementia,
+#               proportion_to_dementia = round_half_up((dementia/all_deaths)*100, digits = 0),
+#               .by = c(year, ca2019name)) %>% 
+#     # mutate() %>% 
+#     rename(area = ca2019name) %>% 
+#     select(year, area, dementia, non_dementia, all_deaths, proportion_to_dementia),
+#   key = ~area, group = "Group 2"
+# )
 
 shared_all_deaths_with_table <- SharedData$new(
   deaths_with_data %>% 
@@ -415,8 +416,8 @@ shared_all_deaths_with_table <- SharedData$new(
 )
 
 
-# deaths_filter_select1 <- filter_select("area_select2", "Select an Area",
-#                                       shared_all_deaths_table, group = ~area, multiple = F)
+deaths_filter_select1 <- filter_select("area_select2", "Select an Area",
+                                      shared_all_deaths_with_table, group = ~area, multiple = F)
 # 
 # deaths_filter_select2 <- filter_select("area_select3", "Select an Area",
 #                                        shared_all_deaths_table, group = ~area, multiple = F)
