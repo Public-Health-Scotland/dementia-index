@@ -411,7 +411,7 @@ shared_all_deaths_with_table <- SharedData$new(
               .by = c(year, ca2019name)) %>% 
     # mutate() %>% 
     rename(area = ca2019name) %>% 
-    select(year, area, dementia, non_dementia, all_deaths, proportion_to_dementia),
+    select(year, area, dementia, non_dementia, proportion_to_dementia),
   key = ~area, group = "Group 3"
 )
 
