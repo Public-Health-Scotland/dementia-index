@@ -39,9 +39,9 @@ index_first <- readRDS('/PHI_conf/Dementia_Index/data/INDEX/dementia_index_first
 # Number of individuals identified as having dementia by financial year, age group, gender & HSCP ####
 age_order <- c("0-59", create_age_groups(seq(60, 90, by=5), 60, 90, by = 5, as_factor = F))
 
-dates <- dmy(31032015)
-dates <- seq.Date(dates, dates+years(9), by = 'year')
-fy_dates <- sort(unique(extract_fin_year(index$diagnosis_date)))[6:15]
+dates <- dmy(31032018)
+dates <- seq.Date(dates, dates+years(6), by = 'year')
+fy_dates <- sort(unique(extract_fin_year(index$diagnosis_date)))[9:15]
 
 # function to get prevalence by year
 prev_df <- function(df, date_end_yr){
@@ -49,9 +49,9 @@ prev_df <- function(df, date_end_yr){
   df <- df %>%
     # calculate age at end of the financial year
     mutate(age_at_eoy = age_calculate(date_of_birth), date_end_yr,
-           # inv dash looks like it use one instance of age and not calculating at each year from SLF
-           age_group = create_age_groups(age_at_diagnosis, from = 0, to = 90, by = 5, as_factor = TRUE),
-           # age_group = create_age_groups(age_at_eoy, from = 0, to = 90, by = 5, as_factor = TRUE),
+           # inv dash looks like it use one instance of age at times and not calculating at each year from SLF
+           # age_group = create_age_groups(age_at_diagnosis, from = 0, to = 90, by = 5, as_factor = TRUE),
+           age_group = create_age_groups(age_at_eoy, from = 0, to = 90, by = 5, as_factor = TRUE),
            age_group = case_when(age_group < "60-64" ~ "0-59",
                                  .default = as.character(age_group)),
            age_group = factor(age_group, levels = age_order, ordered = T),
@@ -203,7 +203,7 @@ prevalence_all_65plus_rates <- prevalence_all_65plus %>%
 # as extracts only have data for date of death but can add in date of registration later
 
 # connect to SMRA
-cohort_start_date <- dmy(01012014)
+cohort_start_date <- dmy(01012017)
 
 SMRAConnection <- dbConnect(odbc(),
                             dsn = "SMRA",
@@ -244,50 +244,9 @@ all_deaths <- bind_rows(
 ) %>% 
   arrange(ca2019name, year, age_group, sex)
 
-deaths_extract_index_g30 <- readRDS('/PHI_conf/Dementia_Index/data/extracts/dementia_deaths_incl_G30.rds')
-# deaths_extract_index <- readRDS('/PHI_conf/Dementia_Index/data/extracts/dementia_deaths.rds')
-
 spd <- get_spd(col_select = c("pc7", "ca2019name", "hscp2018")) %>% 
   transmute(pc7, ca2019name, hscp2018name = match_area(hscp2018)) %>% 
   rename(postcode = pc7)
-
-## Died of dementia #### - not including
-# deaths_extract_index <- deaths_extract_index_g30 %>%
-#   filter(between(date_of_death, cohort_start_date, dmy(31032024)),
-#          age >= 65) %>% 
-#   mutate(year = extract_fin_year(date_of_death),
-#          age_group = create_age_groups(age, from = 65, to = 90, by = 5, as_factor = TRUE),
-#          g30_only = case_when(flag_G30_codes == 1 & flag_dementia == 0 ~ 1,
-#                               .default = 0)) %>% 
-#   left_join(spd)
-# 
-# deaths_w_g30 <- deaths_extract_index %>% 
-#   summarise(dementia_deaths = n(), .by = c(ca2019name, year, age_group, sex)) %>% 
-#   arrange(ca2019name)
-# 
-# deaths_excl_g30 <- deaths_extract_index %>% 
-#   filter(g30_only == 0) %>% 
-#   summarise(dementia_deaths_excl_g30 = n(), .by = c(ca2019name, year, age_group, sex)) %>% 
-#   arrange(ca2019name)
-# 
-# deaths_index_ca <- deaths_w_g30 %>% 
-#   left_join(deaths_excl_g30)
-# 
-# deaths_index <- bind_rows(
-#   deaths_index_ca %>% 
-#     mutate(ca2019name = 'Scotland') %>% 
-#     summarise(dementia_deaths = sum(dementia_deaths),
-#               dementia_deaths_excl_g30 = sum(dementia_deaths_excl_g30),
-#               .by = c(ca2019name, year, age_group, sex)),
-#   
-#   deaths_index_ca) %>% 
-#   mutate(dementia_deaths_excl_g30 = case_when(is.na(dementia_deaths_excl_g30) ~ 0,
-#                                               .default = dementia_deaths_excl_g30))
-# 
-# deaths_of_data <- all_deaths %>% 
-#   left_join(deaths_index) %>% 
-#   mutate(proportion_to_dementia = dementia_deaths/deaths) %>% 
-#   filter(year > "2013/14")
 
 ## Died with dementia ####
 died_with_dem <- index_first %>% 
@@ -314,7 +273,7 @@ died_with_dem_all <- bind_rows(
 deaths_with_data <- all_deaths %>% 
   left_join(died_with_dem_all) %>% 
   mutate(proportion_to_dementia = dementia/deaths) %>% 
-  filter(year > "2013/14")
+  filter(year > "2016/17")
 
 # R markdown objects ####
 theme_dash <- function() {
@@ -442,7 +401,7 @@ shared_deaths_with_chart_age <- SharedData$new(
               proportion = round_half_up((dementia/all_deaths)*100, digits = 0),
               .by = c(year, ca2019name, age_group)) %>%
     rename(area = ca2019name) %>%
-    select(year, area, age_group, dementia, non_dementia, all_deaths, proportion),
+    select(year, area, age_group, dementia, non_dementia, proportion),
   key = ~area, group = "Group 3"
 )
 
@@ -470,7 +429,7 @@ shared_deaths_with_chart_gender <- SharedData$new(
               proportion = round_half_up((dementia/all_deaths)*100, digits = 0),
               .by = c(year, ca2019name, gender)) %>%
     rename(area = ca2019name) %>%
-    select(year, area, gender, dementia, non_dementia, all_deaths, proportion),
+    select(year, area, gender, dementia, non_dementia, proportion),
   key = ~area, group = "Group 3"
 )
 
