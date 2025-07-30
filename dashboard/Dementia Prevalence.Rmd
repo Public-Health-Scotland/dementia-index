@@ -36,7 +36,8 @@ Row
 datatable(shared_prev_65plus_table,
           options = list(dom = 't'),
           rownames = F,
-          selection = 'none')
+          selection = 'none') %>%
+  formatCurrency(c('female', 'male', 'total'),currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
 
@@ -70,7 +71,7 @@ plot_ly(shared_prev_65plus_chart, x = ~year, y = ~rate_100000, meta = ~gender, h
   layout(clickmode = "none", showlegend = FALSE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence rate per 100,000 pop (Aged 65+)", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "Prevalence rate per 100,000 pop (Aged 65+)", linecolor = "#b3b3b3", titlefont = list(size = 16), rangemode = "tozero")
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -85,7 +86,8 @@ plot_ly(shared_prev_65plus_chart, x = ~year, y = ~rate_100000, meta = ~gender, h
 ```{r rate table}
 datatable(shared_prev_65plus_rate_table, options = list(dom = 't'),
           rownames = F,
-          selection = 'none')
+          selection = 'none') %>%
+  formatCurrency(fy_dates, currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
 
@@ -96,14 +98,16 @@ Row {.tabset}
 ```{r age totals}
 datatable(shared_prev_all_total, options = list(dom = 't'),
           rownames = F,
-          selection = 'none')
+          selection = 'none') %>%
+  formatCurrency(c(age_order, 'Total'), currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
 ### Dementia Age Group Split - per 100,000 population
 ```{r age totals rate}
 datatable(shared_prev_all_rate, options = list(dom = 't'),
           rownames = F,
-          selection = 'none')
+          selection = 'none') %>%
+  formatCurrency(age_order, currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
 Row
@@ -113,7 +117,8 @@ Row
 ```{r totals by source}
 datatable(shared_prev_source, options = list(dom = 't'),
           rownames = F,
-          selection = 'none')
+          selection = 'none') %>%
+  formatCurrency(colnames(prev_all_source)[3:10], currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
 # Deaths
@@ -136,7 +141,8 @@ Row
 ```{r all deaths with 65+}
 datatable(shared_all_deaths_with_table, options = list(dom = 't'),
           rownames = F,
-          selection = 'none')
+          selection = 'none') %>%
+  formatCurrency(c('dementia', 'non_dementia'), currency = "", interval = 3, mark = ",", digits = 0)# %>% formatPercentage('proportion_to_dementia')
 ```
 
 Row {.tabset}
@@ -165,7 +171,8 @@ plot_ly(shared_deaths_with_chart_age, x = ~year, y = ~proportion, split = ~rev(a
 ```{r proportion with table age}
 datatable(shared_deaths_with_chart_age, options = list(dom = 't'),
           rownames = F,
-          selection = 'none')
+          selection = 'none') %>%
+  formatCurrency(c('dementia', 'non_dementia'), currency = "", interval = 3, mark = ",", digits = 0)
 ```
 Row {.tabset}
 -----------------------------------------------------------------------
@@ -193,7 +200,8 @@ plot_ly(shared_deaths_with_chart_gender, x = ~year, y = ~proportion, split = ~ge
 ```{r proportion with table gender}
 datatable(shared_deaths_with_chart_gender, options = list(dom = 't'),
           rownames = F,
-          selection = 'none')
+          selection = 'none') %>%
+  formatCurrency(c('dementia', 'non_dementia'), currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
 ```{js }
