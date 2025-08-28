@@ -5,6 +5,7 @@ output:
   flexdashboard::flex_dashboard:
     orientation: rows
     vertical_layout: scroll
+    # smart: false
     # theme:
     # logo: ps_logo.png
 
@@ -21,12 +22,10 @@ Inputs {.sidebar}
 -----------------------------------------------------------------------
 
 ```{r filter_section}
-# prev_filter_selec
+# prev_filter_select
 filter_select("area_select1", "Select an Area",
                                     shared_prev_65plus_chart, group = ~area, allLevels = T, multiple = F)
 ```
-
-
 
 Row
 -----------------------------------------------------------------------
@@ -46,7 +45,7 @@ datatable(shared_prev_65plus_table,
 plot_ly(shared_prev_65plus_chart, x = ~year, y = ~individuals, meta = ~gender, hovertext = ~individuals, type = 'bar', 
           color = ~gender, colors = c("#9B4393", "#0078D4"),
           hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
-    layout(clickmode = "none", showlegend = FALSE, margin = list(l = -5, b = 10, t = 40),
+    layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
            xaxis = list(title = "Integration Authority Area", showline = FALSE, linecolor = "#b3b3b3",
                         categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
            yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
@@ -68,7 +67,7 @@ Row {.tabset}
 plot_ly(shared_prev_65plus_chart, x = ~year, y = ~rate_100000, meta = ~gender, hovertext = ~individuals, 
         type = 'scatter', mode = 'lines', color = ~gender, colors = c("#9B4393", "#0078D4"),
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
-  layout(clickmode = "none", showlegend = FALSE, margin = list(l = -5, b = 10, t = 40),
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
          yaxis = list(title = "Prevalence rate per 100,000 pop (Aged 65+)", linecolor = "#b3b3b3", titlefont = list(size = 16), rangemode = "tozero")
@@ -128,7 +127,7 @@ Inputs {.sidebar}
 
 ```{r filter_section deaths with}
 # deaths_filter_select
-filter_select("area_select2", "Select an Area",
+filter_select("area_select_deaths", "Select an Area",
                                     shared_all_deaths_with_table, group = ~area, allLevels = T, multiple = F)
 ```
 
@@ -151,9 +150,9 @@ Row {.tabset}
 ### Proportion of deaths to that were attributed to dementia - age group (65+ only)
 ```{r proportion with chart age}
 plot_ly(shared_deaths_with_chart_age, x = ~year, y = ~proportion, split = ~rev(age_group), meta = ~age_group, hovertext = ~proportion, type = 'bar', 
-        color = ~age_group, #colors = c("#9B4393", "#0078D4"),
+        color = ~age_group, colors = unname(phsstyles::phs_colour_values)[1:6],
         hovertemplate = paste0("%{x} <br>", "Age Group: %{meta} <br>", "Proportion of deaths attributed to dementia: %{hovertext}% <br>")) %>% 
-  layout(clickmode = "none", showlegend = FALSE, margin = list(l = -5, b = 10, t = 40),
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
          yaxis = list(title = "%", linecolor = "#b3b3b3", titlefont = list(size = 16))
@@ -174,6 +173,7 @@ datatable(shared_deaths_with_chart_age, options = list(dom = 't'),
           selection = 'none') %>%
   formatCurrency(c('dementia', 'non_dementia'), currency = "", interval = 3, mark = ",", digits = 0)
 ```
+
 Row {.tabset}
 -----------------------------------------------------------------------
 
@@ -182,7 +182,7 @@ Row {.tabset}
 plot_ly(shared_deaths_with_chart_gender, x = ~year, y = ~proportion, split = ~gender, meta = ~gender, hovertext = ~proportion, type = 'bar', 
         color = ~gender, colors = c("#9B4393", "#0078D4"),
         hovertemplate = paste0("%{x} <br>", "Gender: %{meta} <br>", "Proportion of deaths attributed to dementia: %{hovertext}% <br>")) %>% 
-  layout(clickmode = "none", showlegend = FALSE, margin = list(l = -5, b = 10, t = 40),
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
          yaxis = list(title = "%", linecolor = "#b3b3b3", titlefont = list(size = 16))
@@ -204,26 +204,647 @@ datatable(shared_deaths_with_chart_gender, options = list(dom = 't'),
   formatCurrency(c('dementia', 'non_dementia'), currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
-```{js }
+# GP Dashboard Comparison
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+```{r filter_section GP comparison}
+# deaths_filter_select
+filter_select("area_select2", "Select an Area",
+                                    shared_prev_comparison_65plus_table, group = ~area, allLevels = T, multiple = F)
+```
+
+The figures included in this tab prevalence from the dementia index compared to those from the [GP Disease Prevalence Dashboard](https://www.publichealthscotland.scot/publications/general-practice-disease-prevalence-data-visualisation/general-practice-disease-prevalence-visualisation-8-july-2025/).
+
+Row
+-----------------------------------------------------------------------
+
+### Aged 65+ Comparison
+```{r 65 plus comparison}
+datatable(shared_prev_comparison_65plus_table, options = list(dom = 't'),
+          rownames = F,
+          selection = 'none') %>%
+  formatCurrency(c('Female', 'Male', 'Total'), currency = "", interval = 3, mark = ",", digits = 0)
+```
+
+### Dementia Prevalence in HSCP 65+
+```{r 65 plus chart comparison}
+plot_ly(shared_prev_comparison_65plus_chart, 
+        x = ~year, y = ~individuals, meta = ~group, hovertext = ~individuals, type = 'bar', 
+        color = ~group, split = ~source, colors = unname(phsstyles::phs_colour_values)[1:4],
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Integration Authority Area", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Age Group Split Comparisons
+```{r age group comparison}
+datatable(shared_prev_comparsion_ages_source, options = list(dom = 't'),
+          rownames = F,
+          selection = 'none') %>%
+  formatCurrency(c(age_order2, 'Total'), currency = "", interval = 3, mark = ",", digits = 0)
+```
+
+# SIMD
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+**SIMD 65+ Age Group**
+
+```{r filter_section SIMD}
+filter_select("area_select_simd", "Select an Area",
+                                    shared_simd_rates_65plus, group = ~area, allLevels = T, multiple = F)
+```
+
+***
+
+<ul>
+  <li>[**65+ Age Group**](#simd)</li>
+  <li>[All Age Groups](#simd-all)</li>
+</ul>
+
+***
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### 65+ SIMD Chart
+```{r 65+ simd numbers chart}
+plot_ly(shared_simd_total_65plus_ch, 
+        x = ~year, y = ~individuals, 
+        meta = ~simd2020v2_sc_quintile, split = ~simd2020v2_sc_quintile,
+        hovertext = ~individuals, type = 'bar', 
+        color = ~simd2020v2_sc_quintile, colors = unname(phsstyles::phs_colour_values)[1:5],
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Integration Authority Area", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+### 65+ SIMD table
+```{r 65+ simd numbers table}
+datatable(shared_simd_total_65plus,# extensions = 'Scroller', 
+          options = list(dom = 't',
+                         pageLength = 40,
+                         columnDefs = list(list(visible=FALSE, targets=c(7)))),
+            rownames = F,
+            fillContainer = T,
+            selection = 'none') %>%
+    formatCurrency(simd_65_cols, currency = "", interval = 3, mark = ",", digits = 0)
+```
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Dementia - per 100,000 population 65+ chart
+```{r all age simd totals}
+plot_ly(shared_simd_rates_65plus_ch, 
+        x = ~year, y = ~rate, 
+        meta = ~simd2020v2_sc_quintile, split = ~simd2020v2_sc_quintile,
+        hovertext = ~rate, type = 'bar', 
+        color = ~simd2020v2_sc_quintile, colors = unname(phsstyles::phs_colour_values)[1:5],
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Integration Authority Area", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+
+### Dementia - per 100,000 population 65+ table
+```{r 65+ simd rates chart}
+datatable(shared_simd_rates_65plus, options = list(dom = 't',
+                                                   columnDefs = list(list(visible=FALSE, targets=c(7)))),
+            rownames = F,
+            fillContainer = TRUE,
+            selection = 'none') %>%
+    formatCurrency(simd_65_cols, currency = "", interval = 3, mark = ",", digits = 0)
+
+```
+
+# SIMD All {.hidden}
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+**SIMD All Age Groups**
+
+```{r filter_section SIMD hidden}
+filter_select("area_select_simd2", "Select an Area",
+                                    shared_simd_rates_ch, group = ~area, allLevels = T, multiple = F)
+
+filter_select("year_select_simd2", "Select a Financial Year",
+                                    shared_simd_rates_ch, group = ~year, allLevels = T, multiple = F)
+```
+
+***
+
+<ul>
+  <li>[65+ Age Group](#simd)</li>
+  <li>[**All Age Groups**](#simd-all)</li>
+</ul>
+
+***
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### SIMD Chart
+```{r 65+ simd numbers chart hidden}
+plot_ly(shared_simd_total_ch, 
+        x = ~age_group, y = ~individuals, 
+        meta = ~simd2020v2_sc_quintile, split = ~simd2020v2_sc_quintile,
+        hovertext = ~individuals, type = 'bar', 
+        color = ~simd2020v2_sc_quintile, colors = unname(phsstyles::phs_colour_values)[1:5],
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+### SIMD table
+```{r 65+ simd numbers table hidden}
+datatable(shared_simd_total,# extensions = 'Scroller', 
+          options = list(dom = 't',
+                         pageLength = 40,
+                         columnDefs = list(list(visible=FALSE, targets=c(11)))),
+            rownames = F,
+            fillContainer = T,
+            selection = 'none') %>%
+    formatCurrency(age_order, currency = "", interval = 3, mark = ",", digits = 0)
+```
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Dementia Age Group SIMD Split - per 100,000 population chart
+```{r all age simd totals hidden}
+plot_ly(shared_simd_rates_ch,
+        x = ~age_group, y = ~rate,
+        meta = ~simd2020v2_sc_quintile, split = ~simd2020v2_sc_quintile,
+        hovertext = ~rate, type = 'bar',
+        color = ~simd2020v2_sc_quintile, colors = unname(phsstyles::phs_colour_values)[1:5],
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>%
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d',
+                                       'zoomOut2d', 'autoScale2d',
+                                       'toggleSpikelines',
+                                       'hoverCompareCartesian',
+                                       'hoverClosestCartesian', 'toImage'),
+         displaylogo = F, editable = F)
+```
+
+
+### Dementia Age Group SIMD Split - per 100,000 population table
+```{r simd rates table hidden}
+datatable(shared_simd_rates, options = list(dom = 't',
+                                            columnDefs = list(list(visible=FALSE, targets=c(11)))),
+            rownames = F,
+            fillContainer = TRUE,
+            selection = 'none') %>%
+    formatCurrency(age_order, currency = "", interval = 3, mark = ",", digits = 0)
+
+```
+
+# Urban Rural Classification
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+**URC 65+ Age Group**
+
+```{r filter_section urc}
+filter_select("area_select_urc", "Select an Area",
+                                    shared_urc8_65plus_ch, group = ~area, allLevels = T, multiple = F)
+```
+
+***
+
+<ul>
+  <li>[**65+ Age Group**](#urban-rural-classification)</li>
+  <li>[All Age Groups](#urban-rural-classification-all)</li>
+</ul>
+
+***
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### 65+ UR8 Chart
+```{r 65+ urc8 numbers chart}
+plot_ly(shared_urc8_65plus_ch, 
+        x = ~year, y = ~individuals, 
+        meta = ~ur8_name, split = ~ur8_name,
+        hovertext = ~individuals, type = 'bar', 
+        color = ~ur8_name, colors = unname(phsstyles::phs_colour_values)[1:8],
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+### 65+ UR8 table
+```{r 65+ urc8 numbers table}
+datatable(shared_urc8_65plus_table, 
+          options = list(dom = 't',
+                         pageLength = 40,
+                         columnDefs = list(list(visible=FALSE, targets=c(10)))),
+            rownames = F,
+            fillContainer = T,
+            selection = 'none') %>%
+    formatCurrency(urc8_cols, currency = "", interval = 3, mark = ",", digits = 0)
+```
+
+
+### 65+ UR6 Chart
+```{r 65+ urc6 numbers chart}
+plot_ly(shared_urc6_65plus_ch, 
+        x = ~year, y = ~individuals, 
+        meta = ~ur6_name, split = ~ur6_name,
+        hovertext = ~individuals, type = 'bar', 
+        color = ~ur6_name, colors = unname(phsstyles::phs_colour_values)[1:6],
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+### 65+ UR6 table
+```{r 65+ urc6 numbers table}
+datatable(shared_urc6_65plus_table, 
+          options = list(dom = 't',
+                         pageLength = 40,
+                         columnDefs = list(list(visible=FALSE, targets=c(8)))),
+            rownames = F,
+            fillContainer = T,
+            selection = 'none') %>%
+    formatCurrency(urc6_cols, currency = "", interval = 3, mark = ",", digits = 0)
+```
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Dementia UR8 65+ Percentage chart
+```{r 65+ urc8 perc chart}
+plot_ly(shared_urc8_65plus_ch, 
+        x = ~year, y = ~perc*100, 
+        meta = ~ur8_name, split = ~ur8_name,
+        hovertext = ~perc*100, type = 'bar', 
+        color = ~ur8_name, colors = unname(phsstyles::phs_colour_values)[1:8],
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext}% <br>")) %>% 
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+
+### Dementia UR8 65+ Percentage table
+```{r 65+ urc8 perc table}
+datatable(shared_urc8_65plus_perc_table, 
+          options = list(dom = 't',
+                         pageLength = 40,
+                         columnDefs = list(list(visible=FALSE, targets=c(10)))),
+            rownames = F,
+            fillContainer = T,
+            selection = 'none') %>%
+    formatPercentage(urc8_cols, interval = 3, digits = 1)
+
+```
+
+### Dementia UR6 65+ Percentage chart
+```{r 65+ urc6 perc chart}
+plot_ly(shared_urc6_65plus_ch, 
+        x = ~year, y = ~perc*100, 
+        meta = ~ur6_name, split = ~ur6_name,
+        hovertext = ~perc*100, type = 'bar', 
+        color = ~ur6_name, colors = unname(phsstyles::phs_colour_values)[1:6],
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext}% <br>")) %>% 
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+
+### Dementia UR6 65+ Percentage table
+```{r 65+ urc6 perc table}
+datatable(shared_urc6_65plus_perc_table, 
+          options = list(dom = 't',
+                         pageLength = 40,
+                         columnDefs = list(list(visible=FALSE, targets=c(8)))),
+            rownames = F,
+            fillContainer = T,
+            selection = 'none') %>%
+    formatPercentage(urc6_cols, interval = 3, digits = 1)
+
+```
+
+# Urban Rural Classification All {.hidden}
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+**URC All Age Groups**
+
+```{r filter_section urc all age}
+filter_select("area_select_urc2", "Select an Area",
+                                    shared_urc8_all_ch, group = ~area, allLevels = T, multiple = F)
+filter_select("year_select_urc", "Select a Financial Year",
+                                    shared_urc8_all_ch, group = ~year, allLevels = T, multiple = F)
+```
+
+***
+
+<ul>
+  <li>[65+ Age Group](#urban-rural-classification)</li>
+  <li>[**All Age Groups**](#urban-rural-classification-all)</li>
+</ul>
+
+***
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### UR8 Chart
+```{r urc8 numbers chart}
+plot_ly(shared_urc8_all_ch, 
+        x = ~age_group, y = ~individuals, 
+        meta = ~ur8_name, split = ~ur8_name,
+        hovertext = ~individuals, type = 'bar', 
+        color = ~ur8_name, colors = unname(phsstyles::phs_colour_values)[1:8],
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+### UR8 table
+```{r urc8 numbers table}
+datatable(shared_urc8_all_table, 
+          options = list(dom = 't',
+                         pageLength = 40,
+                         columnDefs = list(list(visible=FALSE, targets=c(11)))),
+            rownames = F,
+            fillContainer = T,
+            selection = 'none') %>%
+    formatCurrency(age_order, currency = "", interval = 3, mark = ",", digits = 0)
+```
+
+### UR6 Chart
+```{r urc6 numbers chart}
+plot_ly(shared_urc6_all_ch, 
+        x = ~age_group, y = ~individuals, 
+        meta = ~ur6_name, split = ~ur6_name,
+        hovertext = ~individuals, type = 'bar', 
+        color = ~ur6_name, colors = unname(phsstyles::phs_colour_values)[1:6],
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+### UR6 table
+```{r urc6 numbers table}
+datatable(shared_urc6_all_table, 
+          options = list(dom = 't',
+                         pageLength = 40,
+                         columnDefs = list(list(visible=FALSE, targets=c(11)))),
+            rownames = F,
+            fillContainer = T,
+            selection = 'none') %>%
+    formatCurrency(age_order, currency = "", interval = 3, mark = ",", digits = 0)
+```
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Dementia UR8 Age Group Split - Percentage chart
+```{r urc8 perc chart}
+plot_ly(shared_urc8_all_ch, 
+        x = ~age_group, y = ~perc*100, 
+        meta = ~ur8_name, split = ~ur8_name,
+        hovertext = ~perc*100, type = 'bar', 
+        color = ~ur8_name, colors = unname(phsstyles::phs_colour_values)[1:8],
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext}% <br>")) %>% 
+  layout(clickmode = "none", showlegend = T, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+
+### Dementia UR8 Age Group Split - Percentage table
+```{r urc8 perc table}
+datatable(shared_urc8_all_perc_table, 
+          options = list(dom = 't',
+                         pageLength = 40,
+                         columnDefs = list(list(visible=FALSE, targets=c(11)))),
+            rownames = F,
+            fillContainer = T,
+            selection = 'none') %>%
+    formatPercentage(age_order, interval = 3, digits = 1)
+
+```
+
+### Dementia UR6 Age Group Split - Percentage chart
+```{r urc6 perc chart}
+plot_ly(shared_urc6_all_ch, 
+        x = ~age_group, y = ~perc*100, 
+        meta = ~ur6_name, split = ~ur6_name,
+        hovertext = ~perc*100, type = 'bar', 
+        color = ~ur6_name, colors = unname(phsstyles::phs_colour_values)[1:6],
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext}% <br>")) %>% 
+  layout(clickmode = "none", showlegend = T, margin = list(l = -5, b = 10, t = 40),
+         xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
+                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
+         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+  ) %>%
+  config(displayModeBar = TRUE, doubleClick = F,
+         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                       'zoomOut2d', 'autoScale2d', 
+                                       'toggleSpikelines', 
+                                       'hoverCompareCartesian', 
+                                       'hoverClosestCartesian', 'toImage'), 
+         displaylogo = F, editable = F)
+```
+
+
+### Dementia UR6 Age Group Split - Percentage table
+```{r urc6 perc table}
+datatable(shared_urc6_all_perc_table, 
+          options = list(dom = 't',
+                         pageLength = 40,
+                         columnDefs = list(list(visible=FALSE, targets=c(11)))),
+            rownames = F,
+            fillContainer = T,
+            selection = 'none') %>%
+    formatPercentage(age_order, interval = 3, digits = 1)
+
+```
+
+```{js}
 function filter_default() {
 
   document.getElementById("area_select1").getElementsByClassName("selectized")
   [0].selectize.removeOption("");
   
   document.getElementById("area_select1").getElementsByClassName("selectized") 
-  [0].selectize.setValue("Aberdeen City", false);
+  [0].selectize.setValue("Scotland", false);
   
   document.getElementById("area_select2").getElementsByClassName("selectized")
   [0].selectize.removeOption("");
   
   document.getElementById("area_select2").getElementsByClassName("selectized") 
-  [0].selectize.setValue("Aberdeen City", false);
+  [0].selectize.setValue("Scotland", false);
   
-  document.getElementById("area_select3").getElementsByClassName("selectized")
+  document.getElementById("area_select_deaths").getElementsByClassName("selectized")
   [0].selectize.removeOption("");
   
-  document.getElementById("area_select3").getElementsByClassName("selectized") 
-  [0].selectize.setValue("Aberdeen City", false);
+  document.getElementById("area_select_deaths").getElementsByClassName("selectized") 
+  [0].selectize.setValue("Scotland", false);
+  
+  document.getElementById("area_select_simd").getElementsByClassName("selectized")
+  [0].selectize.removeOption("");
+  
+  document.getElementById("area_select_simd").getElementsByClassName("selectized") 
+  [0].selectize.setValue("Scotland", false);
+  
+  document.getElementById("area_select_simd2").getElementsByClassName("selectized")
+  [0].selectize.removeOption("");
+  
+  document.getElementById("area_select_simd2").getElementsByClassName("selectized") 
+  [0].selectize.setValue("Scotland", false);
+  
+  document.getElementById("year_select_simd2").getElementsByClassName("selectized")
+  [0].selectize.removeOption("");
+  
+  document.getElementById("year_select_simd2").getElementsByClassName("selectized") 
+  [0].selectize.setValue("2023/24", false);
+  
+  document.getElementById("area_select_urc").getElementsByClassName("selectized")
+  [0].selectize.removeOption("");
+  
+  document.getElementById("area_select_urc").getElementsByClassName("selectized") 
+  [0].selectize.setValue("Scotland", false);
+  
+  document.getElementById("area_select_urc2").getElementsByClassName("selectized")
+  [0].selectize.removeOption("");
+  
+  document.getElementById("area_select_urc2").getElementsByClassName("selectized") 
+  [0].selectize.setValue("Scotland", false);
+  
+  document.getElementById("year_select_urc").getElementsByClassName("selectized")
+  [0].selectize.removeOption("");
+  
+  document.getElementById("year_select_urc").getElementsByClassName("selectized") 
+  [0].selectize.setValue("2023/24", false);
   
   }
   
