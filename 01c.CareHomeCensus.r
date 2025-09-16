@@ -1,10 +1,10 @@
 ###Care home census####
 ##We get this extract form th chc team###
 
-#
 
 CareHomeCensus <- read_excel("/PHI_conf/Dementia_Index/data/extracts/dementia_CareHomeCensus_2017_18_to_2023_24.xlsx")
 View(CareHomeCensus)
+
 
 #Clean up variables with inconsistent values
 CareHomeCensus <-CareHomeCensus %>%
@@ -25,10 +25,9 @@ CareHomeCensus <-CareHomeCensus %>%
 ##and admission before 1990
 CareHomeCensus <-CareHomeCensus %>%
   mutate(los_years = round((as.Date(DateOfDischarge)- as.Date(DateOfAdmission))/365.25,1)) %>% 
-  filter(los_years >=0) %>%
+  filter(los_years >=0 | is.na(los_years)) %>%
   filter(DateOfAdmission >= as.Date("1994-01-01")) %>%
   filter(is.na(DateOfDischarge) | DateOfDischarge >= as.Date("1994-01-01"))
-  
 
 
 CareHomeCensus <-CareHomeCensus %>%
@@ -94,6 +93,7 @@ two_diags <- two_diags %>% arrange(UPI_NUMBER, first_admission) %>%
                           dementia_subtype=="99 Suspected dementia" & 
                             lag(dementia_subtype)=="07 Yet to be determined"~2)) 
 two_diags <- two_diags %>% ungroup() %>% filter(is.na(drop))  %>% select(-drop)
+
 
 all_CHC <- rbind(CHC_MD, CHC_NMD, two_diags)
 ##prefix names and left join
