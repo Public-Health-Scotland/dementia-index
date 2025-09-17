@@ -316,7 +316,7 @@ dementia_index <- dementia_index %>%
                                       is.na(age_at_diagnosis) ~ chi_age_at_diagnosis,
                                       .default = age_at_diagnosis),
          date_of_birth = case_when(age_at_diagnosis < 18 | age_at_diagnosis > 120 ~ chi_dob,
-                                   is.na(age_at_diagnosis) ~ chi_dob,
+                                   is.na(date_of_birth) ~ chi_dob,
                                    .default = date_of_birth)) %>%
   select(-c(chi_age_at_diagnosis, chi_dob))
 
