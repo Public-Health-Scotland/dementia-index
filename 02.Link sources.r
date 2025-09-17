@@ -303,13 +303,22 @@ table(dementia_index$death_age_diag)
 
 ##select variables and save###
 dementia_index <- dementia_index %>%
-  select(source, upi_number,chi_dob,chi_sex,chi_age_diag,  diagnosis_date,
+  select(source, upi_number,chi_age_diag, chi_dob, chi_sex, age_diag, dob, diagnosis_date,
          diagnosis, diagnosis_description, date_of_death, 
          postcode, ch_postcode, SIMD_at_diag,hb2019, hb2019name, everything()) %>%
-  select(-c(health_board_area, chi_postcode, sex, dob, death_dob, age_diag, 
+  select(-c(health_board_area, chi_postcode, sex, death_dob, 
             death_age_diag, hbtreat_currentdate, institution)) %>%
-  rename(date_of_birth = chi_dob, sex=chi_sex, age_at_diagnosis = chi_age_diag, 
-         hbres = hb2019name, hbres_code= hb2019)
+  rename(date_of_birth = dob, sex=chi_sex, chi_age_at_diagnosis = chi_age_diag, 
+         age_at_diagnosis = age_diag, 
+         hbres = hb2019name, hbres_code= hb2019) %>% 
+  # use chi_age & dob when age is less than 18 or greater than 120
+  mutate(age_at_diagnosis = case_when(age_at_diagnosis < 18 | age_at_diagnosis > 120 ~ chi_age_at_diagnosis,
+                                      is.na(age_at_diagnosis) ~ chi_age_at_diagnosis,
+                                      .default = age_at_diagnosis),
+         date_of_birth = case_when(age_at_diagnosis < 18 | age_at_diagnosis > 120 ~ chi_dob,
+                                   is.na(date_of_birth) ~ chi_dob,
+                                   .default = date_of_birth)) %>%
+  select(-c(chi_age_at_diagnosis, chi_dob))
 
 names(dementia_index)
 
