@@ -1,3 +1,4 @@
+# gp prevalence data
 # Index comparison to GP prevalence data
 data_dir <- "/PHI_conf/Dementia_Index/outputs/HSCP dashboard/"
 
@@ -16,7 +17,7 @@ unique(gp_data$year)
 gp_data_2 <- gp_data %>% 
   mutate(pop_year = year-1,
          year = paste0(pop_year, "/", substr(year, 3, 4)),
-         age_group = case_when(age < "60-64" ~ "0-59",
+         age_group = case_when(age < "60-64" ~ "18-59",
                                .default = age),
          age_65plus = case_when(age >= "65-69" & age != "All" ~ T,
                                 .default = F)) %>% 
@@ -89,13 +90,6 @@ shared_prev_comparison_65plus_table <- SharedData$new(
     rename(area = hscp2019name), key = ~area, group = "Group 3"
 )
 
-bscols(
-  datatable(shared_prev_comparison_65plus_table, options = list(dom = 't'),
-            rownames = F,
-            selection = 'none') %>%
-    formatCurrency(c('Female', 'Male', 'Total'), currency = "", interval = 3, mark = ",", digits = 0)
-)
-
 
 shared_prev_comparison_65plus_chart <- SharedData$new(
   prev_comparison_65plus_source %>% 
@@ -104,27 +98,6 @@ shared_prev_comparison_65plus_chart <- SharedData$new(
     mutate(group = paste(gender, source, sep = ' - ')) %>% 
     rename(area = hscp2019name), key = ~area, group = "Group 3"
 )
-
-plot_ly(prev_comparison_65plus_source %>% 
-          pivot_longer(Female:Total, names_to = 'gender', values_to = 'individuals') %>% 
-          filter(gender != 'Total') %>% 
-          mutate(group = paste(source, gender, sep = ' - ')) %>%  
-          filter(hscp2019name == 'Scotland'), 
-        x = ~year, y = ~individuals, meta = ~group, hovertext = ~individuals, type = 'bar', 
-        color = ~group, split = ~source, colors = c("#9B4393", "#0078D4", "#C73918", "#1E7F84"),#c("#9B4393", "#0078D4", "#007854"),
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
-  layout(clickmode = "none", showlegend = FALSE, margin = list(l = -5, b = 10, t = 40),
-         xaxis = list(title = "Integration Authority Area", showline = FALSE, linecolor = "#b3b3b3",
-                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
-  ) %>%
-  config(displayModeBar = TRUE, doubleClick = F,
-         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
-                                       'zoomOut2d', 'autoScale2d', 
-                                       'toggleSpikelines', 
-                                       'hoverCompareCartesian', 
-                                       'hoverClosestCartesian', 'toImage'), 
-         displaylogo = F, editable = F)
 
 ## Age groups ####
 # Patient age is calculated in terms of how old a patient would have 
@@ -164,22 +137,3 @@ shared_prev_comparsion_ages_source <- SharedData$new(
   prev_comparsion_ages_source %>% 
     rename(area = hscp2019name), key = ~area, group = "Group 3"
 )
-# I think the all age categories were calculated differently
-# as when I add up totals across age groups I get a very slightly lower number
-prev_comparsion_ages_source %>%
-  filter(hscp2019name == 'Scotland') %>% 
-  adorn_totals('col')
-
-gp_data %>% filter(age == 'All', sex == 'All',
-                   location == 'Scotland')
-
-
-gp_data_2 %>% 
-  filter(age_group == 'All',
-         gender == 'All',
-         hscp2019name == 'Scotland') %>%
-  summarise(count_dementia = sum(count_dementia),
-            .by = year)
-  
-gp_data %>% 
-  filter(age != 'All', gender == 'All')

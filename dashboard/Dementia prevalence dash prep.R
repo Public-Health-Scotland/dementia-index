@@ -18,6 +18,7 @@ library(plotly)
 
 library(crosstalk)
 library(DT)
+library(bsicons)
 
 # Dementia index
 index <- readRDS('/PHI_conf/Dementia_Index/data/INDEX/dementia_index.rds') %>% 
@@ -51,7 +52,7 @@ area_order <- c("Scotland", sort(unique(index$hscp2019name)[1:31]))
 #   arrange(source, year, ca2019name)
 
 # Number of individuals identified as having dementia by financial year, age group, gender & HSCP ####
-age_order <- c("0-59", create_age_groups(seq(60, 90, by=5), 60, 90, by = 5, as_factor = F))
+age_order <- c("18-59", create_age_groups(seq(60, 90, by=5), 60, 90, by = 5, as_factor = F))
 
 dates <- dmy(31032018)
 dates <- seq.Date(dates, dates+years(6), by = 'year')
@@ -209,14 +210,23 @@ prevalence_all_65plus <- prevalence_all %>%
             .by = c(year, hscp2019name, age_group, gender)) %>% 
   arrange(hscp2019name, year, age_group)
 
-# population data (2014-2023) ####
-pops <- readRDS("/conf/linkage/output/lookups/Unicode/Populations/Estimates/HSCP2019_pop_est_1981_2023.rds") %>% 
+# population data (2014-2024) ####
+pops <- readRDS("/conf/linkage/output/lookups/Unicode/Populations/Estimates/HSCP2019_pop_est_1981_2024.rds") %>% 
   filter(year >= 2014)
 
-pops_age_groups_ca <- pops %>%
+# all ages
+pops_age_groups_ca <- pops %>% 
   mutate(age_group = create_age_groups(age, from = 0, to = 90, by = 5, as_factor = TRUE),
          age_group = case_when(age_group < "60-64" ~ "0-59",
                                .default = as.character(age_group)),
+         age_group = factor(age_group, levels = age_order, ordered = T)) %>% 
+  summarise(pop = sum(pop), .by = c(year, hscp2019name, age_group, sex_name))
+
+# 18+
+pops_age_groups_ca <- pops %>%
+  filter(age >= 18) %>% 
+  mutate(age_group = case_when(age < 60 ~ "18-59",
+                               .default = create_age_groups(age, from = 60, to = 90, by = 5, as_factor = TRUE)),
          age_group = factor(age_group, levels = age_order, ordered = T)) %>% 
   summarise(pop = sum(pop), .by = c(year, hscp2019name, age_group, sex_name))
 
@@ -260,13 +270,14 @@ prevalence_all_65plus_rates <- prevalence_all_65plus %>%
 # connect to SMRA
 cohort_start_date <- dmy(01012017)
 
-keyring::keyring_unlock(keyring = "DATABASE",
-                        password = source("~/database_keyring.R")[["value"]])
+# keyring::keyring_unlock(keyring = "DATABASE",
+#                         password = source("~/database_keyring.R")[["value"]])
 
 SMRAConnection <- dbConnect(odbc(),
                             dsn = "SMRA",
                             uid = Sys.info()[["user"]], # Assumes the user's SMR01 username is the same as their R server username
-                            pwd = keyring::key_get("SMRA", Sys.info()[["user"]], keyring = "DATABASE"))
+                            # pwd = keyring::key_get("SMRA", Sys.info()[["user"]], keyring = "DATABASE"))
+                            pwd = .rs.askForPassword("What is your LDAP password?"))
 
 
 deaths <- as_tibble(
@@ -305,9 +316,9 @@ all_deaths <- bind_rows(
 ) %>% 
   arrange(hscp2019name, year, age_group, sex)
 
-spd <- get_spd(col_select = c("pc7", "hscp2019name")) %>% 
-  # transmute(pc7, hscp2019name = match_area(hscp2019), ) %>% 
-  rename(postcode = pc7)
+# spd <- get_spd(col_select = c("pc7", "hscp2019name")) %>% 
+#   # transmute(pc7, hscp2019name = match_area(hscp2019), ) %>% 
+#   rename(postcode = pc7)
 
 ## Died with dementia ####
 died_with_dem <- index_first %>% 
@@ -464,6 +475,7 @@ shared_deaths_with_chart_age <- SharedData$new(
               proportion = round_half_up((dementia/all_deaths)*100, digits = 0),
               .by = c(year, hscp2019name, age_group)) %>%
     rename(area = hscp2019name) %>%
+    mutate(age_group = factor(age_group, levels = rev(age_order), ordered = T)) %>% 
     select(year, area, age_group, dementia, non_dementia, proportion),
   key = ~area, group = "Group 2"
 )
@@ -501,5 +513,8 @@ knit_rmd <- function(){
                     output_dir = "/PHI_conf/Dementia_Index/outputs/HSCP dashboard/",
                     output_file = paste0("Dementia Prevalence_", format(Sys.Date(), "%Y_%m_%d"), ".html"))
 }
+
+source(paste0(here::here(), "/dashboard/gp_prev_comparison.R"))
+source(paste0(here::here(), "/dashboard/simd_prev.R"))
 
 knit_rmd()
