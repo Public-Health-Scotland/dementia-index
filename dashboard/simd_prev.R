@@ -256,7 +256,10 @@ simd_totals_ch <- simd_totals %>%
 simd_rates <- prevalence_all_simd_rate %>% 
   select(-c(individuals, pop)) %>% 
   pivot_wider(names_from = age_group,
-              values_from = rate_100000, values_fill = 0)
+              values_from = rate_100000, values_fill = 0) %>% 
+  mutate(simd2020v2_sc_quintile = case_when(simd2020v2_sc_quintile == 1 ~ "1 (Most Deprived)",
+                                            simd2020v2_sc_quintile == 5 ~ "5 (Most Deprived)",
+                                            .default = as.character(simd2020v2_sc_quintile)))
 
 simd_rates_ch <- simd_rates %>% 
   pivot_longer(cols = all_of(age_order), names_to = 'age_group', values_to = 'rate')
