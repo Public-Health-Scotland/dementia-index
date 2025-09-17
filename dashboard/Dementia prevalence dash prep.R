@@ -63,7 +63,7 @@ prev_df <- function(df, date_end_yr){
   
   df <- df %>%
     # calculate age at end of the financial year
-    mutate(age_at_eoy = as.integer(time_length(interval(chi_dob, date_end_yr), 'years')),
+    mutate(age_at_eoy = as.integer(time_length(interval(date_of_birth, date_end_yr), 'years')),
            # age_at_eoy = age_calculate(date_of_birth), date_end_yr,
            # inv dash looks like it use one instance of age at times and not calculating at each year from SLF
            # age_group = create_age_groups(age_at_diagnosis, from = 0, to = 90, by = 5, as_factor = TRUE),
@@ -100,12 +100,11 @@ prev_pl_df <- function(df, date_end_yr){
   
   df <- df %>%
     # calculate age at end of the financial year
-    mutate(age_at_eoy = floor(time_length(interval(chi_dob, date_end_yr), 'years')),
+    mutate(age_at_eoy = floor(time_length(interval(date_of_birth, date_end_yr), 'years')),
            # inv dash looks like it use one instance of age at times and not calculating at each year from SLF
            # age_group = create_age_groups(age_at_diagnosis, from = 0, to = 90, by = 5, as_factor = TRUE),
-           age_group = create_age_groups(age_at_eoy, from = 0, to = 90, by = 5, as_factor = TRUE),
-           age_group = case_when(age_group < "60-64" ~ "0-59",
-                                 .default = as.character(age_group)),
+           age_group = case_when(age_at_eoy < 60 ~ "18-59",
+                                 .default = create_age_groups(age_at_eoy, from = 60, to = 90, by = 5, as_factor = TRUE)),
            age_group = factor(age_group, levels = age_order, ordered = T),
            gender = case_when(sex == 1 ~ 'Male',
                               sex == 2 ~ "Female",

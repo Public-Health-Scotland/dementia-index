@@ -34,12 +34,11 @@ prev_pl_df <- function(df, date_end_yr){
   
   df <- df %>%
     # calculate age at end of the financial year
-    mutate(age_at_eoy = as.integer(time_length(interval(chi_dob, date_end_yr), 'years')),
+    mutate(age_at_eoy = as.integer(time_length(interval(date_of_birth, date_end_yr), 'years')),
            # inv dash looks like it use one instance of age at times and not calculating at each year from SLF
            # age_group = create_age_groups(age_at_diagnosis, from = 0, to = 90, by = 5, as_factor = TRUE),
-           age_group = create_age_groups(age_at_eoy, from = 0, to = 90, by = 5, as_factor = TRUE),
-           age_group = case_when(age_group < "60-64" ~ "0-59",
-                                 .default = as.character(age_group)),
+           age_group = case_when(age_at_eoy < 60 ~ "18-59",
+                                 .default = create_age_groups(age_at_eoy, from = 60, to = 90, by = 5, as_factor = TRUE)),
            age_group = factor(age_group, levels = age_order, ordered = T),
            gender = case_when(sex == 1 ~ 'Male',
                               sex == 2 ~ "Female",
@@ -141,6 +140,7 @@ dz_pop <- readRDS("/conf/linkage/output/lookups/Unicode/Populations/Estimates/Da
 #             .by = c(year, datazone2011, hscp2019name, age_group)) %>% 
 #   left_join(spd_dz)
 
+# all ages
 simd_pops <- dz_pop %>%
   filter(year >= 2017) %>% 
   select(year, hscp2019name, simd2020v2_sc_quintile, total_pop, age0:age90plus) %>% 
@@ -151,6 +151,21 @@ simd_pops <- dz_pop %>%
   mutate(age_group = create_age_groups(age, from = 0, to = 90, by = 5, as_factor = TRUE),
          age_group = case_when(age_group < "60-64" ~ "0-59",
                                .default = as.character(age_group)),
+         age_group = factor(age_group, levels = age_order, ordered = T)) %>% 
+  summarise(pop = sum(pop), 
+            .by = c(year, hscp2019name, age_group, simd2020v2_sc_quintile)) %>% 
+  arrange(hscp2019name, year, age_group, simd2020v2_sc_quintile)
+
+# 18+
+simd_pops <- dz_pop %>%
+  filter(year >= 2017) %>% 
+  select(year, hscp2019name, simd2020v2_sc_quintile, total_pop, age18:age90plus) %>% 
+  pivot_longer(cols = starts_with('age'), names_to = "age",
+               # names_pattern = "age(\\d+)",
+               names_transform = list(age = ~ as.numeric(gsub("age|plus", "", .x))),
+               values_to = 'pop') %>% arrange(desc(age)) %>%
+  mutate(age_group = case_when(age < 60 ~ "18-59",
+                               .default = create_age_groups(age, from = 60, to = 90, by = 5, as_factor = TRUE)),
          age_group = factor(age_group, levels = age_order, ordered = T)) %>% 
   summarise(pop = sum(pop), 
             .by = c(year, hscp2019name, age_group, simd2020v2_sc_quintile)) %>% 
@@ -186,16 +201,18 @@ prevalence_all_65plus_simd_rate <- prevalence_all_simd_rate %>%
 ### SIMD Numbers table 65+ ####
 simd_totals_65plus <- prevalence_all_65plus_simd_rate %>% 
   select(-c(age_group, pop, rate_100000)) %>% 
-  pivot_wider(names_from = simd2020v2_sc_quintile, names_prefix = "Quintile ",
-              values_from = individuals, values_fill = 0)
+  pivot_wider(names_from = simd2020v2_sc_quintile,
+              values_from = individuals, values_fill = 0) %>% 
+  rename(`1 (Most Deprived)` = `1`, `5 (Least Deprived)` = `5`)
 
 simd_65_cols <- colnames(simd_totals_65plus)[3:7]
 
 ### SIMD rate table 65+ ####
 simd_rates_65plus <- prevalence_all_65plus_simd_rate %>% 
   select(-c(age_group, individuals, pop)) %>% 
-  pivot_wider(names_from = simd2020v2_sc_quintile, names_prefix = "Quintile ",
-              values_from = rate_100000, values_fill = 0)
+  pivot_wider(names_from = simd2020v2_sc_quintile,
+              values_from = rate_100000, values_fill = 0) %>% 
+  rename(`1 (Most Deprived)` = `1`, `5 (Least Deprived)` = `5`)
 
 # need these to have data for each simd quintile
 # shared_simd_total_65plus <- SharedData$new(simd_totals_65plus, group = 'SIMD')
@@ -206,7 +223,7 @@ shared_simd_total_65plus <- SharedData$new(simd_totals_65plus %>%
 
 shared_simd_total_65plus_ch <- SharedData$new(
   simd_totals_65plus %>% 
-    pivot_longer(cols = starts_with('quintile'), names_to = 'simd2020v2_sc_quintile', values_to = 'individuals') %>% 
+    pivot_longer(cols = all_of(simd_65_cols), names_to = 'simd2020v2_sc_quintile', values_to = 'individuals') %>% 
     mutate(key = paste0(year,area)), 
   key = ~key, group = "Group 4"
 )
@@ -217,7 +234,7 @@ shared_simd_rates_65plus <- SharedData$new(simd_rates_65plus %>%
 
 shared_simd_rates_65plus_ch <- SharedData$new(
   simd_rates_65plus %>% 
-    pivot_longer(cols = starts_with('quintile'), names_to = 'simd2020v2_sc_quintile', values_to = 'rate') %>% 
+    pivot_longer(cols = all_of(simd_65_cols), names_to = 'simd2020v2_sc_quintile', values_to = 'rate') %>% 
     mutate(key = paste0(year,area)), 
   key = ~key, group = "Group 4"
 )
@@ -226,7 +243,10 @@ shared_simd_rates_65plus_ch <- SharedData$new(
 simd_totals <- prevalence_all_simd_rate %>% 
   select(-c(pop, rate_100000)) %>% 
   pivot_wider(names_from = age_group,
-              values_from = individuals, values_fill = 0)
+              values_from = individuals, values_fill = 0) %>% 
+  mutate(simd2020v2_sc_quintile = case_when(simd2020v2_sc_quintile == 1 ~ "1 (Most Deprived)",
+                                            simd2020v2_sc_quintile == 5 ~ "5 (Most Deprived)",
+                                            .default = as.character(simd2020v2_sc_quintile)))
 
 simd_totals_ch <- simd_totals %>%
   pivot_longer(cols = all_of(age_order), names_to = 'age_group', values_to = 'individuals')
