@@ -14,9 +14,9 @@ knitr::opts_chunk$set(echo = FALSE)
 
 # Notes {data-icon="fa-info-circle"}
 
-#### **<span style="color:red;text-decoration:underline">Not for onward dirstribution.</span>**
+#### **<span style="color:red;text-decoration:underline">Not for onward distribution.</span>**
 
-#### <span style="text-decoration:underline">**Dementia Index Prevelance**</span>
+#### <span style="text-decoration:underline">**Dementia Index Prevalence**</span>
 #### **Scotland and HSCP Level 2017/18 - 2023/24** 
 
 Dashboard showing prevalence and death figures for people aged 18+ at Scotland and HSCP level with age, sex, SIMD and urban rural classification breakdowns.
@@ -62,9 +62,9 @@ filter_select("area_select1", "Select an Area",
 
 **Note:**
 
-<p>Dementia Service Contacts & Patient Total</p>
+<p>There is a reduction in numbers due to the COVID period where fewer hospital admissions were recorded. There was no care home census carried out in 2019/20 and from the period of 2018/19 to 2021/22 there was a decrease of 70% in admissions for respite residents.</p>
 
-<p>This table shows a total count of all patients by each source they are found in, so a patient may appear in more than one source. The patient total count is a count of each person who appeared in any source</p>
+<p>The Dementia Service Contacts & Patient Total table shows a total count of all patients by each source they are found in, so a patient may appear in more than one source. The patient total count is a count of each person who appeared in any source</p>
 
 Row
 -----------------------------------------------------------------------
@@ -86,7 +86,7 @@ plot_ly(shared_prev_65plus_chart, x = ~year, y = ~individuals, meta = ~gender, h
           color = ~gender, colors = c("#9B4393", "#0078D4"),
           hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
     layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
-           xaxis = list(title = "Integration Authority Area", showline = FALSE, linecolor = "#b3b3b3",
+           xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                         categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
            yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
     ) %>%
@@ -177,7 +177,7 @@ filter_select("area_select_deaths", "Select an Area",
                                     shared_all_deaths_with_table, group = ~area, allLevels = T, multiple = F)
 ```
 
-The figures included in this tab show dementia and non-dementia deaths. The figures show the proportion of deaths of those aged 65+ that also had a diagnosis of dementia.
+The figures included in this tab show dementia and non-dementia deaths. The figures show the percent of deaths of those aged 65+ that also had a diagnosis of dementia.
 
 Row
 -----------------------------------------------------------------------
@@ -187,14 +187,14 @@ Row
 datatable(shared_all_deaths_with_table, options = list(dom = 't'),
           rownames = F,
           selection = 'none',
-          colnames = c("Year", "Area", "Dementia Cohort", "Non Dementia", "Proportion Dementia")) %>%
+          colnames = c("Year", "Area", "Dementia Cohort Deaths", "Other Deaths", "Percent Dementia")) %>%
   formatCurrency(c('dementia', 'non_dementia'), currency = "", interval = 3, mark = ",", digits = 0)# %>% formatPercentage('proportion_to_dementia')
 ```
 
 Row {.tabset}
 -----------------------------------------------------------------------
 
-### Proportion of deaths attributed to dementia cohort - age group (65+ only)
+### Percent of all deaths attributed to dementia cohort - age group (65+ only)
 ```{r proportion with chart age}
 plot_ly(shared_deaths_with_chart_age, x = ~year, y = ~proportion, split = ~age_group, meta = ~age_group, hovertext = ~proportion, type = 'bar', 
         color = ~age_group, colors = unname(phsstyles::phs_colour_values)[1:6],
@@ -226,7 +226,7 @@ datatable(shared_deaths_with_chart_age, options = list(dom = 't',
 Row {.tabset}
 -----------------------------------------------------------------------
 
-### Proportion of deaths attributed to dementia cohort - gender (65+ only)
+### Percent of all deaths attributed to dementia cohort - gender (65+ only)
 ```{r proportion with chart gender}
 plot_ly(shared_deaths_with_chart_gender, x = ~year, y = ~proportion, split = ~gender, meta = ~gender, hovertext = ~proportion, type = 'bar', 
         color = ~gender, colors = c("#9B4393", "#0078D4"),
@@ -268,6 +268,10 @@ filter_select("area_select2", "Select an Area",
 
 The figures included in this tab prevalence from the dementia index compared to those from the [GP Disease Prevalence Dashboard](https://www.publichealthscotland.scot/publications/general-practice-disease-prevalence-data-visualisation/general-practice-disease-prevalence-visualisation-8-july-2025/).
 
+**Note:**
+
+Rates from GP data are reported per 100, therefore rates for the index have been adjusted accordingly on this page.
+
 Row
 -----------------------------------------------------------------------
 
@@ -287,7 +291,7 @@ plot_ly(shared_prev_comparison_65plus_chart,
         color = ~group, split = ~source, colors = unname(phsstyles::phs_colour_values)[1:4],
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
-         xaxis = list(title = "Integration Authority Area", showline = FALSE, linecolor = "#b3b3b3",
+         xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
          yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
@@ -305,11 +309,20 @@ Row {.tabset}
 
 ### Age Group Split Comparisons
 ```{r age group comparison}
-datatable(shared_prev_comparsion_ages_source, options = list(dom = 't'),
+datatable(shared_prev_comparsion_ages_source_numbers, options = list(dom = 't'),
           rownames = F,
           selection = 'none',
           colnames = c("Year", "Area", "Source", age_order2, "Total")) %>%
-  formatCurrency(c(age_order2, 'Total'), currency = "", interval = 3, mark = ",", digits = 0)
+  formatCurrency(c(age_order2, "Total"), currency = "", interval = 3, mark = ",", digits = 0)
+```
+
+### Age Group Split Comparisons - Rate per 100 
+```{r age groups over 65 comparison}
+datatable(shared_prev_comparsion_ages_source_rates, options = list(dom = 't'),
+          rownames = F,
+          selection = 'none',
+          colnames = c("Year", "Area", "Source", age_order_gp)) %>%
+  formatCurrency(c(age_order_gp), currency = "", interval = 3, mark = ",", digits = 1)
 ```
 
 # SIMD {data-icon="fa-chart-line"}
@@ -345,7 +358,7 @@ plot_ly(shared_simd_total_65plus_ch,
         color = ~simd2020v2_sc_quintile, colors = unname(phsstyles::phs_colour_values)[1:5],
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
-         xaxis = list(title = "Integration Authority Area", showline = FALSE, linecolor = "#b3b3b3",
+         xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
          yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
@@ -383,9 +396,9 @@ plot_ly(shared_simd_rates_65plus_ch,
         color = ~simd2020v2_sc_quintile, colors = unname(phsstyles::phs_colour_values)[1:5],
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
-         xaxis = list(title = "Integration Authority Area", showline = FALSE, linecolor = "#b3b3b3",
+         xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "Rate per 100,000", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -485,7 +498,7 @@ plot_ly(shared_simd_rates_ch,
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "Rate per 100,000", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d',
@@ -607,18 +620,18 @@ datatable(shared_urc6_65plus_table,
 Row {.tabset}
 -----------------------------------------------------------------------
 
-### Dementia UR8 65+ Percentage chart
+### Dementia UR8 65+ Percent chart
 ```{r 65+ urc8 perc chart}
 plot_ly(shared_urc8_65plus_ch, 
         x = ~year, y = ~perc*100, 
         meta = ~ur8_name, split = ~ur8_name,
         hovertext = ~round_half_up(perc*100, digits = 1), type = 'bar', 
         color = ~ur8_name, colors = unname(phsstyles::phs_colour_values)[1:8],
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Percentage: %{hovertext}% <br>")) %>% 
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Percent: %{hovertext}% <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "%", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -630,7 +643,7 @@ plot_ly(shared_urc8_65plus_ch,
 ```
 
 
-### Dementia UR8 65+ Percentage table
+### Dementia UR8 65+ Percent table
 ```{r 65+ urc8 perc table}
 datatable(shared_urc8_65plus_perc_table, 
           options = list(dom = 't',
@@ -644,18 +657,18 @@ datatable(shared_urc8_65plus_perc_table,
 
 ```
 
-### Dementia UR6 65+ Percentage chart
+### Dementia UR6 65+ Percent chart
 ```{r 65+ urc6 perc chart}
 plot_ly(shared_urc6_65plus_ch, 
         x = ~year, y = ~perc*100, 
         meta = ~ur6_name, split = ~ur6_name,
         hovertext = ~round_half_up(perc*100, digits = 1), type = 'bar', 
         color = ~ur6_name, colors = unname(phsstyles::phs_colour_values)[1:6],
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Percentage: %{hovertext}% <br>")) %>% 
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Percent: %{hovertext}% <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "%", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -667,7 +680,7 @@ plot_ly(shared_urc6_65plus_ch,
 ```
 
 
-### Dementia UR6 65+ Percentage table
+### Dementia UR6 65+ Percent table
 ```{r 65+ urc6 perc table}
 datatable(shared_urc6_65plus_perc_table, 
           options = list(dom = 't',
@@ -780,18 +793,18 @@ datatable(shared_urc6_all_table,
 Row {.tabset}
 -----------------------------------------------------------------------
 
-### Dementia UR8 Age Group Split - Percentage chart
+### Dementia UR8 Age Group Split - Percent chart
 ```{r urc8 perc chart}
 plot_ly(shared_urc8_all_ch, 
         x = ~age_group, y = ~perc*100, 
         meta = ~ur8_name, split = ~ur8_name,
         hovertext = ~round_half_up(perc*100, digits = 1), type = 'bar', 
         color = ~ur8_name, colors = unname(phsstyles::phs_colour_values)[1:8],
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Percentage: %{hovertext}% <br>")) %>% 
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Percent: %{hovertext}% <br>")) %>% 
   layout(clickmode = "none", showlegend = T, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "%", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -803,7 +816,7 @@ plot_ly(shared_urc8_all_ch,
 ```
 
 
-### Dementia UR8 Age Group Split - Percentage table
+### Dementia UR8 Age Group Split - Percent table
 ```{r urc8 perc table}
 datatable(shared_urc8_all_perc_table, 
           options = list(dom = 't',
@@ -817,18 +830,18 @@ datatable(shared_urc8_all_perc_table,
 
 ```
 
-### Dementia UR6 Age Group Split - Percentage chart
+### Dementia UR6 Age Group Split - Percent chart
 ```{r urc6 perc chart}
 plot_ly(shared_urc6_all_ch, 
         x = ~age_group, y = ~perc*100, 
         meta = ~ur6_name, split = ~ur6_name,
         hovertext = ~round_half_up(perc*100, digits = 1), type = 'bar', 
         color = ~ur6_name, colors = unname(phsstyles::phs_colour_values)[1:6],
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Percentage: %{hovertext}% <br>")) %>% 
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Percent: %{hovertext}% <br>")) %>% 
   layout(clickmode = "none", showlegend = T, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "%", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -840,7 +853,7 @@ plot_ly(shared_urc6_all_ch,
 ```
 
 
-### Dementia UR6 Age Group Split - Percentage table
+### Dementia UR6 Age Group Split - Percent table
 ```{r urc6 perc table}
 datatable(shared_urc6_all_perc_table, 
           options = list(dom = 't',

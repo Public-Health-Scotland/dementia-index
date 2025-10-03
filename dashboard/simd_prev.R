@@ -30,35 +30,6 @@
 # Calculate prevalence
 # instead of summarising the numbers, create a patient level df of 
 # prevalence, will allow for easier breakdowns of urc and simd etc
-prev_pl_df <- function(df, date_end_yr){
-  
-  df <- df %>%
-    # calculate age at end of the financial year
-    mutate(age_at_eoy = as.integer(time_length(interval(date_of_birth, date_end_yr), 'years')),
-           # inv dash looks like it use one instance of age at times and not calculating at each year from SLF
-           # age_group = create_age_groups(age_at_diagnosis, from = 0, to = 90, by = 5, as_factor = TRUE),
-           age_group = case_when(age_at_eoy < 60 ~ "18-59",
-                                 .default = create_age_groups(age_at_eoy, from = 60, to = 90, by = 5, as_factor = TRUE)),
-           age_group = factor(age_group, levels = age_order, ordered = T),
-           gender = case_when(sex == 1 ~ 'Male',
-                              sex == 2 ~ "Female",
-                              .default = NA),
-           diag_year = extract_fin_year(diagnosis_date))
-  
-  
-  fy_yr1 <- substr(date_end_yr, 1, 4)
-  fy_date <- paste0(as.character(as.numeric(fy_yr1)-1), "/", substr(fy_yr1, 3, 4))
-  
-  prev_year <- df %>% 
-    filter(diagnosis_date <= date_end_yr,
-           # keep those with a date of death greater than the end of that year
-           # or those who have not died but were diagnosed by that point
-           (date_of_death > date_end_yr | is.na(date_of_death))
-    ) %>% 
-    mutate(year = fy_date,
-           hscp2019name = factor(hscp2019name, levels = area_order, ordered = T)) %>% 
-    select(year, postcode, hscp2019name, age_group, gender, simd2020v2_sc_quintile, ur6_2022_name, ur8_2022_name, source)
-}
 
 # patient level prevalence data
 prev_ca_source_first_pl <- bind_rows(lapply(dates, prev_pl_df, df = index_first)) %>% 
@@ -113,32 +84,6 @@ prevalence_all_simd %>%
 # lowest level we have populations for is DZ, a DZ can have multiple 
 # vastly different urc categories so not easy to build a proper picture
 dz_pop <- readRDS("/conf/linkage/output/lookups/Unicode/Populations/Estimates/DataZone2011_pop_est_2011_2022.rds")
-
-# spd <- get_spd(col_select = c("pc7", "datazone2011", "ur6_2022_name")) %>% 
-#   rename(postcode = pc7)
-# 
-# spd_dz <- spd %>%
-#   select(-postcode) %>% 
-#   distinct()
-#   
-# spd_dz %>% 
-#   filter(datazone2011 == 'S01006506')
-# 
-# # dz_pop_long <- 
-# dz_pop %>%
-#   filter(year >= 2017) %>% 
-#   select(year, datazone2011, hscp2019name, total_pop, age0:age90plus) %>% 
-#   pivot_longer(cols = starts_with('age'), names_to = "age",
-#                # names_pattern = "age(\\d+)",
-#                names_transform = list(age = ~ as.numeric(gsub("age|plus", "", .x))),
-#                values_to = 'pop') %>% arrange(desc(age)) %>%
-#   mutate(age_group = create_age_groups(age, from = 0, to = 90, by = 5, as_factor = TRUE),
-#          age_group = case_when(age_group < "60-64" ~ "0-59",
-#                                .default = as.character(age_group)),
-#          age_group = factor(age_group, levels = age_order, ordered = T)) %>%
-#   summarise(pop = sum(pop),
-#             .by = c(year, datazone2011, hscp2019name, age_group)) %>% 
-#   left_join(spd_dz)
 
 # all ages
 simd_pops <- dz_pop %>%
