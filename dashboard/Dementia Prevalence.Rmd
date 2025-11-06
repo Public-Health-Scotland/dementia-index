@@ -16,18 +16,20 @@ knitr::opts_chunk$set(echo = FALSE)
 
 #### **<span style="color:red;text-decoration:underline">Not for onward distribution.</span>**
 
-#### <span style="text-decoration:underline">**Dementia Index Prevalence**</span>
+#### <span style="text-decoration:underline">**Dementia Index Recorded Prevalence**</span>
 #### **Scotland and HSCP Level 2017/18 - 2023/24** 
 
-Dashboard showing prevalence and death figures for people aged 18+ at Scotland and HSCP level with age, sex, SIMD and urban rural classification breakdowns.
+Dashboard showing recorded prevalence and death figures for people aged 18+ at Scotland and HSCP level with age, sex, SIMD and urban rural classification breakdowns.
+
+Please note that prevalence figures do not capture 100% of diagnoses in Scotland as these figures do not include data of recorded diagnosis from GP systems. Therefore figures are likely lower than the true number and should only be used as an estimate.
 
 #### <span style="text-decoration:underline">**Pages**</span>
 
- - [Dementia Prevalence](#dementia-prevalence) - Dementia prevalence broken down by age, sex and data sources where dementia diagnosis appeared
+ - [Recorded Dementia Prevalence](#recorded-dementia-prevalence) - Recorded prevalence broken down by age, sex and data sources where dementia diagnosis appeared
  - [Deaths](#deaths) - Deaths broken down by age group and sex (65+ only)
  - [GP Dementia Prevalence Comparison](#gp-dashboard-comparison) - Comparison with GP disease prevalence figures for dementia, broken down by age and sex
- - [SIMD](#simd) - Dementia prevalence breakdowns by SIMD2020v2 quintiles
- - [Urban Rural Classification](#urban-rural-classification) - Dementia Prevalence broken down by UR8 & UR6 classification (2022)
+ - [SIMD](#simd) - Recorded prevalence breakdowns by SIMD2020v2 quintiles
+ - [Urban Rural Classification](#urban-rural-classification) - Recorded Prevalence broken down by UR8 & UR6 classification (2022)
 
 #### <span style="text-decoration:underline">**Data Sources**</span>
 
@@ -36,7 +38,6 @@ Dashboard showing prevalence and death figures for people aged 18+ at Scotland a
  - Care Home Census
  - PIS
  - Social Care
- 
 
 #### <span style="text-decoration:underline">**Dementia Index Contacts**</span>
 
@@ -47,7 +48,7 @@ If you have any questions about this output, or would like to enquire about usin
  - Jack Donaghy | Senior Information Analyst - <a href="mailto:jack.donaghy2@phs.scot">jack.donaghy2@phs.scot</a>
 
 
-# Dementia Prevalence {data-icon="fa-chart-line"}
+# Recorded Dementia Prevalence {data-icon="fa-chart-line"}
 
 Inputs {.sidebar}
 -----------------------------------------------------------------------
@@ -58,18 +59,16 @@ filter_select("area_select1", "Select an Area",
                                     shared_prev_65plus_chart, group = ~area, allLevels = T, multiple = F)
 ```
 
-</br>
-
-**Note:**
+**Notes:**
 
 <p>There is a reduction in numbers due to the COVID period where fewer hospital admissions were recorded. There was no care home census carried out in 2019/20 and from the period of 2018/19 to 2021/22 there was a decrease of 70% in admissions for respite residents.</p>
 
-<p>The Dementia Service Contacts & Patient Total table shows a total count of all patients by each source they are found in, so a patient may appear in more than one source. The patient total count is a count of each person who appeared in any source</p>
+<p>**Dementia Service Contacts & Patient Total** - this table shows a total count of all patients by each source they are found in, so a patient may appear in more than one source. The patient total count is a count of each person who appeared in any source</p>
 
 Row
 -----------------------------------------------------------------------
 
-### Dementia Prevalence - Aged 65+
+### Dementia Count - Aged 65+
 ```{r 65+ table}
 datatable(shared_prev_65plus_table,
           options = list(dom = 't'),
@@ -80,7 +79,7 @@ datatable(shared_prev_65plus_table,
 ```
 
 
-### Dementia Prevalence in HSCP - Aged 65+
+### Dementia Count in Area - Aged 65+
 ```{r 65+ chart}
 plot_ly(shared_prev_65plus_chart, x = ~year, y = ~individuals, meta = ~gender, hovertext = ~individuals, type = 'bar', 
           color = ~gender, colors = c("#9B4393", "#0078D4"),
@@ -88,7 +87,7 @@ plot_ly(shared_prev_65plus_chart, x = ~year, y = ~individuals, meta = ~gender, h
     layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
            xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                         categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-           yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+           yaxis = list(title = "Count", linecolor = "#b3b3b3", titlefont = list(size = 16))
     ) %>%
     config(displayModeBar = TRUE, doubleClick = F,
            modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -121,13 +120,21 @@ plot_ly(shared_prev_65plus_chart, x = ~year, y = ~rate_100000, meta = ~gender, h
          displaylogo = F, editable = F)
 ```
 
-### Dementia Rate per 100,000 - Aged 65+ Table
+### Dementia Count and Rate per 100,000 - Aged 65+ Table
 ```{r rate table}
-datatable(shared_prev_65plus_rate_table, options = list(dom = 't'),
+# datatable(shared_prev_65plus_rate_table, options = list(dom = 't'),
+#           rownames = F,
+#           selection = 'none',
+#           colnames = c("Area", "Gender", fy_dates)) %>%
+#   formatCurrency(fy_dates, currency = "", interval = 3, mark = ",", digits = 0)
+
+count_rate_cols <- colnames(prevalence_all_count_rates)[4:7]
+
+datatable(shared_prev_65plus_count_rate_table, options = list(dom = 't'),
           rownames = F,
-          selection = 'none',
-          colnames = c("Area", "Gender", fy_dates)) %>%
-  formatCurrency(fy_dates, currency = "", interval = 3, mark = ",", digits = 0)
+          colnames = c("Year", "Area", count_rate_cols),
+          selection = 'none') %>%
+  formatCurrency(count_rate_cols, currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
 
@@ -177,18 +184,31 @@ filter_select("area_select_deaths", "Select an Area",
                                     shared_all_deaths_with_table, group = ~area, allLevels = T, multiple = F)
 ```
 
-The figures included in this tab show dementia and non-dementia deaths. The figures show the percent of deaths of those aged 65+ that also had a diagnosis of dementia.
+**Notes:**
 
-Row
+**Deaths of those with a dementia diagnosis** - These figures show deaths for those who had a diagnosis of dementia either prior to death or as a cause of death and those who had no dementia diagnosis within the source datasets. The percent figures show the percent of all deaths for the year that were attributed to those aged 65+ who also had a diagnosis of dementia.
+
+**NRS Dementia Deaths** - These figures show all deaths caused by dementia and deaths mentioning dementia on the death certificate. Deaths caused by dementia are where a dementia code (F01, F03 or G30) is determined as the underlying cause of death. Deaths mentioning dementia are any death where dementia is either an underlying or contributing cause of death. More information on NRS definitions and methodology can be found in their <a href="https://www.nrscotland.gov.uk/publications/alzheimer-s-and-other-dementia-deaths/#" target="_blank">Alzheimer’s and other dementia deaths publication</a>
+
+Row {.tabset}
 -----------------------------------------------------------------------
 
-### Deaths of those aged 65+
+### Deaths of those with a dementia diagnosis (65+)
 ```{r all deaths with 65+}
 datatable(shared_all_deaths_with_table, options = list(dom = 't'),
           rownames = F,
           selection = 'none',
-          colnames = c("Year", "Area", "Dementia Cohort Deaths", "Other Deaths", "Percent Dementia")) %>%
+          colnames = c("Year", "Area", "Dementia Cohort Deaths", "Deaths with no dementia diagnosis", "Percent Dementia")) %>%
   formatCurrency(c('dementia', 'non_dementia'), currency = "", interval = 3, mark = ",", digits = 0)# %>% formatPercentage('proportion_to_dementia')
+```
+
+### NRS Dementia Deaths (65+)
+```{r nrs deaths 65+}
+datatable(shared_nrs_deaths, options = list(dom = 't'),
+          rownames = F,
+          selection = 'none',
+          colnames = c("Year", "Area", colnames(nrs_deaths)[3:5])) %>% 
+  formatCurrency(c(colnames(nrs_deaths))[3:4], currency = "", interval = 3, mark =  ", ", digits = 0)
 ```
 
 Row {.tabset}
@@ -266,16 +286,16 @@ filter_select("area_select2", "Select an Area",
                                     shared_prev_comparison_65plus_table, group = ~area, allLevels = T, multiple = F)
 ```
 
-The figures included in this tab prevalence from the dementia index compared to those from the [GP Disease Prevalence Dashboard](https://www.publichealthscotland.scot/publications/general-practice-disease-prevalence-data-visualisation/general-practice-disease-prevalence-visualisation-8-july-2025/).
-
 **Note:**
+
+The figures included in this tab prevalence from the dementia index compared to those from the <a href="https://www.publichealthscotland.scot/publications/general-practice-disease-prevalence-data-visualisation/general-practice-disease-prevalence-visualisation-8-july-2025/" target="_blank">GP Disease Prevalence Dashboard</a>
 
 Rates from GP data are reported per 100, therefore rates for the index have been adjusted accordingly on this page.
 
 Row
 -----------------------------------------------------------------------
 
-### Aged 65+ Comparison
+### Aged 65+ Count Comparison
 ```{r 65 plus comparison}
 datatable(shared_prev_comparison_65plus_table, options = list(dom = 't'),
           rownames = F,
@@ -284,7 +304,7 @@ datatable(shared_prev_comparison_65plus_table, options = list(dom = 't'),
   formatCurrency(c('Female', 'Male', 'Total'), currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
-### Dementia Prevalence in HSCP 65+
+### Dementia Count in Area 65+
 ```{r 65 plus chart comparison}
 plot_ly(shared_prev_comparison_65plus_chart, 
         x = ~year, y = ~individuals, meta = ~group, hovertext = ~individuals, type = 'bar', 
@@ -293,7 +313,7 @@ plot_ly(shared_prev_comparison_65plus_chart,
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "Count", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -360,7 +380,7 @@ plot_ly(shared_simd_total_65plus_ch,
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "Count", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -460,7 +480,7 @@ plot_ly(shared_simd_total_ch,
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "Count", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -557,7 +577,7 @@ plot_ly(shared_urc8_65plus_ch,
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "Count", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -593,7 +613,7 @@ plot_ly(shared_urc6_65plus_ch,
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "Count", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -620,14 +640,14 @@ datatable(shared_urc6_65plus_table,
 Row {.tabset}
 -----------------------------------------------------------------------
 
-### Dementia UR8 65+ Percent chart
-```{r 65+ urc8 perc chart}
-plot_ly(shared_urc8_65plus_ch, 
-        x = ~year, y = ~perc*100, 
+### Dementia per 100,000 population UR8 65+ chart
+```{r 65+ urc8 rate chart}
+plot_ly(shared_urc8_65plus_rate_ch,
+        x = ~year, y = ~rate,
         meta = ~ur8_name, split = ~ur8_name,
-        hovertext = ~round_half_up(perc*100, digits = 1), type = 'bar', 
+        hovertext = ~round_half_up(rate, digits = 1), type = 'bar',
         color = ~ur8_name, colors = unname(phsstyles::phs_colour_values)[1:8],
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Percent: %{hovertext}% <br>")) %>% 
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate per 100,000: %{hovertext}% <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
@@ -642,10 +662,9 @@ plot_ly(shared_urc8_65plus_ch,
          displaylogo = F, editable = F)
 ```
 
-
-### Dementia UR8 65+ Percent table
-```{r 65+ urc8 perc table}
-datatable(shared_urc8_65plus_perc_table, 
+### Dementia per 100,000 population UR8 65+ table
+```{r 65+ urc8 rate table}
+datatable(shared_urc8_65plus_rate_table, 
           options = list(dom = 't',
                          pageLength = 42,
                          columnDefs = list(list(visible=FALSE, targets=c(10)))),
@@ -653,18 +672,17 @@ datatable(shared_urc8_65plus_perc_table,
             fillContainer = T,
             selection = 'none',
           colnames = c("Year", "Area", urc8_cols, "key")) %>%
-    formatPercentage(urc8_cols, interval = 3, digits = 1)
-
+    formatCurrency(urc8_cols, currency = "", interval = 3, mark = ",", digits = 1)
 ```
 
-### Dementia UR6 65+ Percent chart
-```{r 65+ urc6 perc chart}
-plot_ly(shared_urc6_65plus_ch, 
-        x = ~year, y = ~perc*100, 
+### Dementia per 100,000 population UR6 65+ chart
+```{r 65+ urc6 rate chart}
+plot_ly(shared_urc6_65plus_rate_ch,
+        x = ~year, y = ~rate,
         meta = ~ur6_name, split = ~ur6_name,
-        hovertext = ~round_half_up(perc*100, digits = 1), type = 'bar', 
+        hovertext = ~round_half_up(rate, digits = 1), type = 'bar',
         color = ~ur6_name, colors = unname(phsstyles::phs_colour_values)[1:6],
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Percent: %{hovertext}% <br>")) %>% 
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate per 100,000: %{hovertext}% <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
@@ -679,10 +697,9 @@ plot_ly(shared_urc6_65plus_ch,
          displaylogo = F, editable = F)
 ```
 
-
-### Dementia UR6 65+ Percent table
-```{r 65+ urc6 perc table}
-datatable(shared_urc6_65plus_perc_table, 
+### Dementia per 100,000 population UR6 65+ table
+```{r 65+ urc6 rate table}
+datatable(shared_urc6_65plus_rate_table, 
           options = list(dom = 't',
                          pageLength = 42,
                          columnDefs = list(list(visible=FALSE, targets=c(8)))),
@@ -690,8 +707,7 @@ datatable(shared_urc6_65plus_perc_table,
             fillContainer = T,
             selection = 'none',
           colnames = c("Year", "Area", urc6_cols, "key")) %>%
-    formatPercentage(urc6_cols, interval = 3, digits = 1)
-
+    formatCurrency(urc6_cols, currency = "", interval = 3, mark = ",", digits = 1)
 ```
 
 # Urban Rural Classification All {.hidden}
@@ -731,7 +747,7 @@ plot_ly(shared_urc8_all_ch,
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "Count", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -766,7 +782,7 @@ plot_ly(shared_urc6_all_ch,
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "Count", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -793,18 +809,18 @@ datatable(shared_urc6_all_table,
 Row {.tabset}
 -----------------------------------------------------------------------
 
-### Dementia UR8 Age Group Split - Percent chart
-```{r urc8 perc chart}
-plot_ly(shared_urc8_all_ch, 
-        x = ~age_group, y = ~perc*100, 
+### Dementia per 100,000 population UR8 Age Group chart
+```{r urc8 rate chart}
+plot_ly(shared_urc8_all_rate_ch,
+        x = ~age_group, y = ~rate,
         meta = ~ur8_name, split = ~ur8_name,
-        hovertext = ~round_half_up(perc*100, digits = 1), type = 'bar', 
+        hovertext = ~round_half_up(rate, digits = 1), type = 'bar',
         color = ~ur8_name, colors = unname(phsstyles::phs_colour_values)[1:8],
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Percent: %{hovertext}% <br>")) %>% 
-  layout(clickmode = "none", showlegend = T, margin = list(l = -5, b = 10, t = 40),
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate per 100,000: %{hovertext} <br>")) %>% 
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "%", linecolor = "#b3b3b3", titlefont = list(size = 16))
+         yaxis = list(title = "Rate per 100,000", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
   config(displayModeBar = TRUE, doubleClick = F,
          modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
@@ -815,30 +831,28 @@ plot_ly(shared_urc8_all_ch,
          displaylogo = F, editable = F)
 ```
 
-
-### Dementia UR8 Age Group Split - Percent table
-```{r urc8 perc table}
-datatable(shared_urc8_all_perc_table, 
+### Dementia per 100,000 population UR8 Age Group table
+```{r urc8 rate table}
+datatable(shared_urc8_all_rate_table, 
           options = list(dom = 't',
                          pageLength = 42,
                          columnDefs = list(list(visible=FALSE, targets=c(11)))),
-          rownames = F,
-          fillContainer = T,
-          selection = 'none',
-          colnames = c("Year", "Area", "UR8", age_order, "key")) %>%
-    formatPercentage(age_order, interval = 3, digits = 1)
-
+            rownames = F,
+            fillContainer = T,
+            selection = 'none',
+          colnames = c("Year", "Area", "UR8 Name", age_order, "key")) %>%
+    formatCurrency(age_order, currency = "", interval = 3, mark = ",", digits = 1)
 ```
 
-### Dementia UR6 Age Group Split - Percent chart
-```{r urc6 perc chart}
-plot_ly(shared_urc6_all_ch, 
-        x = ~age_group, y = ~perc*100, 
+### Dementia per 100,000 population UR6 Age Group chart
+```{r urc6 rate chart}
+plot_ly(shared_urc6_all_rate_ch,
+        x = ~age_group, y = ~rate,
         meta = ~ur6_name, split = ~ur6_name,
-        hovertext = ~round_half_up(perc*100, digits = 1), type = 'bar', 
+        hovertext = ~round_half_up(rate, digits = 1), type = 'bar',
         color = ~ur6_name, colors = unname(phsstyles::phs_colour_values)[1:6],
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Percent: %{hovertext}% <br>")) %>% 
-  layout(clickmode = "none", showlegend = T, margin = list(l = -5, b = 10, t = 40),
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate per 100,000: %{hovertext}% <br>")) %>% 
+  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
          yaxis = list(title = "%", linecolor = "#b3b3b3", titlefont = list(size = 16))
@@ -852,21 +866,18 @@ plot_ly(shared_urc6_all_ch,
          displaylogo = F, editable = F)
 ```
 
-
-### Dementia UR6 Age Group Split - Percent table
-```{r urc6 perc table}
-datatable(shared_urc6_all_perc_table, 
+### Dementia per 100,000 population UR6 Age Group table
+```{r urc6 rate table}
+datatable(shared_urc6_all_rate_table, 
           options = list(dom = 't',
                          pageLength = 42,
                          columnDefs = list(list(visible=FALSE, targets=c(11)))),
-          rownames = F,
-          fillContainer = T,
-          selection = 'none',
-          colnames = c("Year", "Area", "UR6", age_order, "key")) %>%
-    formatPercentage(age_order, interval = 3, digits = 1)
-
+            rownames = F,
+            fillContainer = T,
+            selection = 'none',
+          colnames = c("Year", "Area", "UR6 Name", age_order, "key")) %>%
+    formatCurrency(age_order, currency = "", interval = 3, mark = ",", digits = 1)
 ```
-
 
 ```{js}
 function filter_default() {
