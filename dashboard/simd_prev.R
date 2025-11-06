@@ -80,9 +80,6 @@ prevalence_all_simd %>%
 
 
 # can use rates for SIMD
-# can't use rates for urc as they are set at postcode level and the 
-# lowest level we have populations for is DZ, a DZ can have multiple 
-# vastly different urc categories so not easy to build a proper picture
 dz_pop <- readRDS("/conf/linkage/output/lookups/Unicode/Populations/Estimates/DataZone2011_pop_est_2011_2022.rds")
 
 # all ages
@@ -223,6 +220,54 @@ shared_simd_rates_ch <- SharedData$new(simd_rates_ch %>%
                                        key = ~key, group = "Group 5")
 
 ## URC ####
+urc_file <- readRDS("/conf/linkage/output/lookups/Unicode/Geography/Urban Rural Classification/DataZone2011_urban_rural_2020v2.rds")
+
+dz_urc_pops_age <- dz_pop %>%
+  filter(year >= 2017) %>% 
+  select(year, datazone2011, hscp2019name, total_pop, age18:age90plus) %>% 
+  pivot_longer(cols = starts_with('age'), names_to = "age",
+               # names_pattern = "age(\\d+)",
+               names_transform = list(age = ~ as.numeric(gsub("age|plus", "", .x))),
+               values_to = 'pop') %>% arrange(desc(age)) %>%
+  mutate(age_group = case_when(age < 60 ~ "18-59",
+                               .default = create_age_groups(age, from = 60, to = 90, by = 5, as_factor = TRUE)),
+         age_group = factor(age_group, levels = age_order, ordered = T)) %>% 
+  summarise(pop = sum(pop), 
+            .by = c(year, datazone2011, hscp2019name, age_group)) %>% 
+  arrange(hscp2019name, datazone2011, year, age_group) %>% 
+  left_join(urc_file)
+
+dz_urc_pops_age_sc <- dz_urc_pops_age %>% 
+  select(-c(UR2_2020:UR3_2020_name, UR6_2020, UR8_2020)) %>% 
+  mutate(hscp2019name = "Scotland") %>% 
+  summarise(pop = sum(pop),
+            .by = c(year, hscp2019name, age_group, UR6_2020_name, UR8_2020_name))
+
+urc_pops <- dz_urc_pops_age_sc %>% 
+  bind_rows(dz_urc_pops_age %>%
+              select(-c(UR2_2020:UR3_2020_name, UR6_2020, UR8_2020)) %>%
+              summarise(pop = sum(pop),
+                        .by = c(year, hscp2019name, age_group, UR6_2020_name, UR8_2020_name))) %>% 
+  rename(cal_year = year, area = hscp2019name, ur6_name = UR6_2020_name, ur8_name = UR8_2020_name) 
+
+urc_pops <- urc_pops %>% 
+  bind_rows(
+    urc_pops %>% 
+      filter(age_group >= "65-69") %>% 
+      mutate(age_group = "65+") %>% 
+      summarise(pop = sum(pop),
+                .by = c(cal_year, area, age_group, ur6_name, ur8_name))) %>% 
+  mutate(area = factor(area, levels = area_order, ordered = T))
+
+ur6_pops <- urc_pops %>%
+  summarise(pop = sum(pop),
+            .by = c(cal_year, area, age_group, ur6_name))
+
+ur8_pops <- urc_pops %>%
+  summarise(pop = sum(pop),
+            .by = c(cal_year, area, age_group, ur8_name))
+
+# for using population now need to split into separate ur6 and 8 dfs
 prevalence_ca_urc <- prev_ca_source_first_pl %>%
   filter(!is.na(ur6_name)) %>% 
   select(-source) %>% 
@@ -238,14 +283,18 @@ prevalence_sc_urc <- prevalence_ca_urc %>%
 
 prevalence_all_urc <- prevalence_sc_urc %>%
   bind_rows(prevalence_ca_urc %>% filter(!is.na(hscp2019name))) %>%
-  mutate(hscp2019name = factor(hscp2019name, levels = area_order, ordered = T))
+  mutate(hscp2019name = factor(hscp2019name, levels = area_order, ordered = T),
+         cal_year = as.numeric(substr(year, 1, 4)),
+         cal_year = case_when(cal_year > max(dz_pop$year) ~ max(dz_pop$year),
+                              .default = cal_year)) %>% 
+  rename(area = hscp2019name) %>% 
+  left_join(urc_pops)
 
 ### 65+ urc data ####
 
 #### UR6 ####
 ##### Numbers ####
 urc6_65plus <- prevalence_all_urc %>%
-  rename(area = hscp2019name) %>% 
   filter(age_group >= "65-69") %>%
   mutate(age_group = "65+") %>%
   summarise(individuals = sum(individuals),
@@ -264,21 +313,29 @@ urc6_cols <- colnames(urc6_65plus_table)[3:8]
   
 shared_urc6_65plus_ch <- SharedData$new(urc6_65plus, key = ~key, group = 'urc65')
 shared_urc6_65plus_table <- SharedData$new(urc6_65plus_table, key = ~key, group = 'urc65')
-  
-##### Percentage ####
-# Just need the table here
-urc6_65plus_perc_table <- urc6_65plus %>%
-  select(year, area, ur6_name, perc) %>% 
-  pivot_wider(names_from = ur6_name, 
-              values_from = perc, values_fill = 0) %>% 
+
+##### Rate ####
+urc6_65plus_rate <- urc6_65plus %>%
+  mutate(cal_year = as.numeric(substr(year, 1, 4)),
+         cal_year = case_when(cal_year > max(dz_pop$year) ~ max(dz_pop$year),
+                              .default = cal_year)) %>%
+  left_join(ur6_pops) %>% 
+  mutate(rate = (individuals/pop)*100000) %>% 
+  select(-c(perc, cal_year)) %>% 
+  relocate(key, .after = rate)
+
+urc6_65plus_rate_table <- urc6_65plus_rate %>%
+  select(year, area, ur6_name, rate) %>% 
+  pivot_wider(names_from = ur6_name,
+              values_from = rate, values_fill = 0) %>% 
   mutate(key = paste0(year, area))
 
-shared_urc6_65plus_perc_table <- SharedData$new(urc6_65plus_perc_table, key = ~key, group = 'urc65')
+shared_urc6_65plus_rate_ch <- SharedData$new(urc6_65plus_rate, key = ~key, group = 'urc65')
+shared_urc6_65plus_rate_table <- SharedData$new(urc6_65plus_rate_table, key = ~key, group = 'urc65')
 
 #### UR8 ####
 ##### Numbers ####
 urc8_65plus <- prevalence_all_urc %>%
-  rename(area = hscp2019name) %>% 
   filter(age_group >= "65-69") %>%
   mutate(age_group = "65+") %>%
   summarise(individuals = sum(individuals),
@@ -299,6 +356,25 @@ urc8_cols <- colnames(urc8_65plus_table)[3:10]
 shared_urc8_65plus_ch <- SharedData$new(urc8_65plus, key = ~key, group = 'urc65')
 shared_urc8_65plus_table <- SharedData$new(urc8_65plus_table, key = ~key, group = 'urc65')
 
+##### Rate ####
+urc8_65plus_rate <- urc8_65plus %>%
+  mutate(cal_year = as.numeric(substr(year, 1, 4)),
+         cal_year = case_when(cal_year > max(dz_pop$year) ~ max(dz_pop$year),
+                              .default = cal_year)) %>%
+  left_join(ur8_pops) %>% 
+  mutate(rate = (individuals/pop)*100000) %>% 
+  select(-c(perc, cal_year)) %>% 
+  relocate(key, .after = rate)
+
+urc8_65plus_rate_table <- urc8_65plus_rate %>%
+  select(year, area, ur8_name, rate) %>% 
+  pivot_wider(names_from = ur8_name,
+              values_from = rate, values_fill = 0) %>% 
+  mutate(key = paste0(year, area))
+
+shared_urc8_65plus_rate_ch <- SharedData$new(urc8_65plus_rate, key = ~key, group = 'urc65')
+shared_urc8_65plus_rate_table <- SharedData$new(urc8_65plus_rate_table, key = ~key, group = 'urc65')
+
 ##### Percentage ####
 # Just need the table here
 urc8_65plus_perc_table <- urc8_65plus %>%
@@ -314,7 +390,6 @@ shared_urc8_65plus_perc_table <- SharedData$new(urc8_65plus_perc_table, key = ~k
 #### UR6 ####
 ##### Numbers ####
 urc6_all <- prevalence_all_urc %>%
-  rename(area = hscp2019name) %>%
   summarise(individuals = sum(individuals),
             .by = c(year, area, age_group, ur6_name))
 
@@ -333,20 +408,28 @@ urc6_all <- urc6_all_table %>%
 shared_urc6_all_ch <- SharedData$new(urc6_all, key = ~key, group = 'urc_all')
 shared_urc6_all_table <- SharedData$new(urc6_all_table, key = ~key, group = 'urc_all')
 
-##### Percentage ####
-# just need the table again
-urc6_all_perc_table <- urc6_all %>% 
-  select(year, area, age_group, ur6_name, perc) %>% 
-  pivot_wider(names_from = age_group, 
-              values_from = perc, values_fill = 0) %>% 
+##### Rate ####
+urc6_all_rate <- urc6_all %>%
+  mutate(cal_year = as.numeric(substr(year, 1, 4)),
+         cal_year = case_when(cal_year > max(dz_pop$year) ~ max(dz_pop$year),
+                              .default = cal_year)) %>%
+  left_join(ur6_pops) %>% 
+  mutate(rate = (individuals/pop)*100000) %>% 
+  select(-c(perc, cal_year)) %>% 
+  relocate(key, .after = rate)
+
+urc6_all_rate_table <- urc6_all_rate %>%
+  select(year, area, age_group, ur6_name, rate) %>% 
+  pivot_wider(names_from = age_group,
+              values_from = rate, values_fill = 0) %>% 
   mutate(key = paste0(year, area))
 
-shared_urc6_all_perc_table <- SharedData$new(urc6_all_perc_table, key = ~key, group = 'urc_all')
+shared_urc6_all_rate_ch <- SharedData$new(urc6_all_rate, key = ~key, group = 'urc_all')
+shared_urc6_all_rate_table <- SharedData$new(urc6_all_rate_table, key = ~key, group = 'urc_all')
 
 #### UR8 ####
 ##### Numbers ####
 urc8_all <- prevalence_all_urc %>%
-  rename(area = hscp2019name) %>%
   summarise(individuals = sum(individuals),
             .by = c(year, area, age_group, ur8_name))
 
@@ -365,12 +448,21 @@ urc8_all <- urc8_all_table %>%
 shared_urc8_all_ch <- SharedData$new(urc8_all, key = ~key, group = 'urc_all')
 shared_urc8_all_table <- SharedData$new(urc8_all_table, key = ~key, group = 'urc_all')
 
-##### Percentage ####
-# just need the table again
-urc8_all_perc_table <- urc8_all %>% 
-  select(year, area, age_group, ur8_name, perc) %>% 
-  pivot_wider(names_from = age_group, 
-              values_from = perc, values_fill = 0) %>% 
+##### Rate ####
+urc8_all_rate <- urc8_all %>%
+  mutate(cal_year = as.numeric(substr(year, 1, 4)),
+         cal_year = case_when(cal_year > max(dz_pop$year) ~ max(dz_pop$year),
+                              .default = cal_year)) %>%
+  left_join(ur8_pops) %>% 
+  mutate(rate = (individuals/pop)*100000) %>% 
+  select(-c(perc, cal_year)) %>% 
+  relocate(key, .after = rate)
+
+urc8_all_rate_table <- urc8_all_rate %>%
+  select(year, area, age_group, ur8_name, rate) %>% 
+  pivot_wider(names_from = age_group,
+              values_from = rate, values_fill = 0) %>% 
   mutate(key = paste0(year, area))
 
-shared_urc8_all_perc_table <- SharedData$new(urc8_all_perc_table, key = ~key, group = 'urc_all')
+shared_urc8_all_rate_ch <- SharedData$new(urc8_all_rate, key = ~key, group = 'urc_all')
+shared_urc8_all_rate_table <- SharedData$new(urc8_all_rate_table, key = ~key, group = 'urc_all')
