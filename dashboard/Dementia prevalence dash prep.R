@@ -223,6 +223,30 @@ prevalence_all_65plus_rates <- prevalence_all_65plus %>%
   left_join(pop_65plus) %>% 
   mutate(rate_100000 = (individuals/pop)*100000)
 
+# Table with both counts and rates 
+prevalence_all_count_rates<- prevalence_all_65plus_rates %>% 
+  filter(gender == 'Female') %>% 
+  select(-c(cal_year, gender, pop, rate_100000)) %>% 
+  rename(`Female Count` = individuals) %>% 
+  left_join(
+    prevalence_all_65plus_rates %>% 
+      filter(gender == 'Female') %>% 
+      select(-c(cal_year, gender, pop, individuals)) %>% 
+      rename(`Female Prevalence` = rate_100000)
+  ) %>% 
+  left_join(
+    prevalence_all_65plus_rates %>% 
+      filter(gender == 'Male') %>% 
+      select(-c(cal_year, gender, pop, rate_100000)) %>% 
+      rename(`Male Count` = individuals)
+  ) %>% 
+  left_join(
+    prevalence_all_65plus_rates %>% 
+      filter(gender == 'Male') %>% 
+      select(-c(cal_year, gender, pop, individuals)) %>% 
+      rename(`Male Prevalence` = rate_100000)
+  )
+
 # Deaths ####
 # deaths statistics usually go by date (and year) of registration, will use date of death here though
 # as extracts only have data for date of death but can add in date of registration later
@@ -230,21 +254,24 @@ prevalence_all_65plus_rates <- prevalence_all_65plus %>%
 # connect to SMRA
 cohort_start_date <- dmy(01012017)
 
-# keyring::keyring_unlock(keyring = "DATABASE",
-#                         password = source("~/database_keyring.R")[["value"]])
+keyring::keyring_unlock(keyring = "DATABASE",
+                        password = source("~/database_keyring.R")[["value"]])
 
 SMRAConnection <- dbConnect(odbc(),
                             dsn = "SMRA",
                             uid = Sys.info()[["user"]], # Assumes the user's SMR01 username is the same as their R server username
-                            # pwd = keyring::key_get("SMRA", Sys.info()[["user"]], keyring = "DATABASE"))
-                            pwd = .rs.askForPassword("What is your LDAP password?"))
+                            pwd = keyring::key_get("SMRA", Sys.info()[["user"]], keyring = "DATABASE"))
+                            # pwd = .rs.askForPassword("What is your LDAP password?"))
 
 
 deaths <- as_tibble(
   dbGetQuery(
     SMRAConnection, paste0(
       "
-    SELECT AGE, SEX, DATE_OF_DEATH, DATE_OF_REGISTRATION, YEAR_OF_REGISTRATION, UNDERLYING_CAUSE_OF_DEATH, HSCP_2019
+    SELECT AGE, SEX, DATE_OF_DEATH, DATE_OF_REGISTRATION, YEAR_OF_REGISTRATION, HSCP_2019,
+    UNDERLYING_CAUSE_OF_DEATH, CAUSE_OF_DEATH_CODE_0 ,CAUSE_OF_DEATH_CODE_1,
+    CAUSE_OF_DEATH_CODE_2, CAUSE_OF_DEATH_CODE_3, CAUSE_OF_DEATH_CODE_4, CAUSE_OF_DEATH_CODE_5,
+    CAUSE_OF_DEATH_CODE_6, CAUSE_OF_DEATH_CODE_7, CAUSE_OF_DEATH_CODE_8, CAUSE_OF_DEATH_CODE_9
     FROM ANALYSIS.GRO_DEATHS_C GRO
     WHERE GRO.DATE_OF_REGISTRATION >= TO_DATE('", cohort_start_date,"', 'yyyy-mm-dd')
     AND country_of_residence ='XS'
@@ -276,11 +303,11 @@ all_deaths <- bind_rows(
 ) %>% 
   arrange(hscp2019name, year, age_group, sex)
 
-# spd <- get_spd(col_select = c("pc7", "hscp2019name")) %>% 
-#   # transmute(pc7, hscp2019name = match_area(hscp2019), ) %>% 
-#   rename(postcode = pc7)
+spd <- get_spd(col_select = c("pc7", "datazone2011", "hscp2019name")) %>%
+  # transmute(pc7, hscp2019name = match_area(hscp2019), ) %>%
+  rename(postcode = pc7)
 
-## Died with dementia ####
+## Died with dementia, index cohort ####
 died_with_dem <- index_first %>% 
   filter(!is.na(date_of_death)) %>% 
   mutate(age_at_death = floor(time_length(interval(date_of_birth, date_of_death), 'years'))) %>% 
@@ -309,6 +336,51 @@ deaths_with_data <- all_deaths %>%
   mutate(proportion_to_dementia = dementia/deaths) %>% 
   filter(year > "2016/17")
 
+## Cause and mentions of dementia on death certificate
+# cause is underlying only, mention is any cause field
+# follows NRS methodology, codes F01, F03 & G30
+icd10_dementia_deaths <- c("F01", "F03", "G30")
+
+deaths_flagged <- deaths %>% 
+  filter(age >= 65) %>% 
+  mutate(flag_dementia = case_when(substr(underlying_cause_of_death,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_0,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_1,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_2,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_3,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_4,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_5,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_6,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_7,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_8,1,3) %in% icd10_dementia_deaths ~1,
+                                   substr(cause_of_death_code_9,1,3) %in% icd10_dementia_deaths ~1,
+                                   T~0),
+         fin_year = extract_fin_year(date_of_registration),
+         hscp2019name = match_area(hscp_2019)) 
+
+### deaths caused by dementia (main numbers NRS publishes)
+deaths_caused_nrs <- deaths_flagged %>%
+  mutate(flag_dementia = case_when(substr(underlying_cause_of_death,1,3) %in% icd10_dementia_deaths ~1,
+                                   .default = 0)) %>% 
+  summarise(`Deaths caused by dementia`  = sum(flag_dementia),
+            .by = c(fin_year, hscp2019name)) %>% 
+  filter(between(fin_year, "2017/18", "2023/24"))
+
+# deaths which mention dementia
+deaths_mentioned_nrs <- deaths_flagged %>%
+  summarise(`Deaths mentioning dementia` = sum(flag_dementia),
+            .by = c(fin_year, hscp2019name)) %>% 
+  filter(between(fin_year, "2017/18", "2023/24"))
+
+nrs_deaths <- left_join(deaths_caused_nrs, deaths_mentioned_nrs) %>%
+  group_by(fin_year) %>% 
+  nest() %>% 
+  mutate(data = map(data, ~ .x %>% adorn_totals("row", name = "Scotland"))) %>%
+  unnest(cols = c(data)) %>% ungroup() %>% 
+  mutate(hscp2019name = factor(hscp2019name, levels = area_order, ordered = T)) %>% 
+  arrange(hscp2019name, fin_year) %>% 
+  mutate(`Percent Caused` = round_half_up((`Deaths caused by dementia` / `Deaths mentioning dementia`)*100, digits = 1))
+
 # R markdown objects ####
 ## Prevalence ####
 
@@ -333,6 +405,13 @@ shared_prev_65plus_rate_table <- SharedData$new(
     select(-rate_100000) %>% 
     pivot_wider(names_from = year, values_from = rate),
   key = ~area, group = "Group 1"
+)
+
+shared_prev_65plus_count_rate_table <- SharedData$new(
+  prevalence_all_count_rates %>% 
+    select(-age_group) %>% 
+    rename(area = hscp2019name), 
+  key = ~area, group = "Group 1" 
 )
 
 shared_prev_all_total <- SharedData$new(
@@ -396,6 +475,11 @@ shared_all_deaths_with_table <- SharedData$new(
 
 deaths_filter_select1 <- filter_select("area_select2", "Select an Area",
                                       shared_all_deaths_with_table, group = ~area, multiple = F)
+
+shared_nrs_deaths <- SharedData$new(
+  nrs_deaths %>% 
+    rename(year = fin_year, area = hscp2019name),
+  key = ~area, group = "Group 2")
 # 
 # deaths_filter_select2 <- filter_select("area_select3", "Select an Area",
 #                                        shared_all_deaths_table, group = ~area, multiple = F)
