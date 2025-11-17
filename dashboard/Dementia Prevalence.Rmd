@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 # Notes {data-icon="fa-info-circle"}
 
-#### **<span style="color:red;text-decoration:underline">Not for onward distribution.</span>**
+#### <span style="color:red;text-decoration:underline;font-size:28px">**Not for onward distribution.**</span>
 
 #### <span style="text-decoration:underline">**Dementia Index Recorded Prevalence**</span>
 #### **Scotland and HSCP Level 2017/18 - 2023/24** 
@@ -81,7 +81,7 @@ datatable(shared_prev_65plus_table,
 
 ### Dementia Count in Area - Aged 65+
 ```{r 65+ chart}
-plot_ly(shared_prev_65plus_chart, x = ~year, y = ~individuals, meta = ~gender, hovertext = ~individuals, type = 'bar', 
+plot_ly(shared_prev_65plus_chart, x = ~year, y = ~individuals, meta = ~gender, hovertext = ~format(individuals, big.mark=',', scientific = FALSE), type = 'bar', 
           color = ~gender, colors = c("#9B4393", "#0078D4"),
           hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
     layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
@@ -103,21 +103,22 @@ Row {.tabset}
 
 ### Dementia Rate per 100,000 - Aged 65+ Chart 
 ```{r rate chart}
-plot_ly(shared_prev_65plus_chart, x = ~year, y = ~rate_100000, meta = ~gender, hovertext = ~round_half_up(rate_100000, digits = 1), 
-        type = 'scatter', mode = 'lines', color = ~gender, colors = c("#9B4393", "#0078D4"),
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate: %{hovertext} <br>")) %>% 
-  layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
-         xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
-                      categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
-         yaxis = list(title = "Prevalence rate per 100,000 pop (Aged 65+)", linecolor = "#b3b3b3", titlefont = list(size = 16), rangemode = "tozero")
-  ) %>%
-  config(displayModeBar = TRUE, doubleClick = F,
-         modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
-                                       'zoomOut2d', 'autoScale2d', 
-                                       'toggleSpikelines', 
-                                       'hoverCompareCartesian', 
-                                       'hoverClosestCartesian', 'toImage'), 
-         displaylogo = F, editable = F)
+plot_ly(shared_prev_65plus_chart, x = ~year, y = ~rate_100000, meta = ~gender, hovertext = ~format(round_half_up(rate_100000, digits = 1), big.mark=',', scientific = FALSE), 
+          type = 'scatter', mode = 'lines', color = ~gender, colors = c("#9B4393", "#0078D4"),
+          hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate: %{hovertext} <br>")) %>% 
+    layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
+           xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
+                        range = list(-0.4, length(sort(unique(prevalence_all_65plus$year)))-1),
+                        categoryorder = "trace", titlefont = list(size = 16)),
+           yaxis = list(title = "Prevalence rate per 100,000 pop (Aged 65+)", titlefont = list(size = 16), rangemode = "tozero")
+    ) %>%
+    config(displayModeBar = TRUE, doubleClick = F,
+           modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d', 
+                                         'zoomOut2d', 'autoScale2d', 
+                                         'toggleSpikelines', 
+                                         'hoverCompareCartesian', 
+                                         'hoverClosestCartesian', 'toImage'), 
+           displaylogo = F, editable = F)
 ```
 
 ### Dementia Count and Rate per 100,000 - Aged 65+ Table
@@ -141,7 +142,7 @@ datatable(shared_prev_65plus_count_rate_table, options = list(dom = 't'),
 Row {.tabset}
 -----------------------------------------------------------------------
 
-### Dementia Age Group Split - Total
+### Dementia Age Group Split - Count
 ```{r age totals}
 datatable(shared_prev_all_total, options = list(dom = 't'),
           rownames = F,
@@ -214,13 +215,13 @@ datatable(shared_nrs_deaths, options = list(dom = 't'),
 Row {.tabset}
 -----------------------------------------------------------------------
 
-### Percent of all deaths attributed to dementia cohort - age group (65+ only)
+### Percent of all deaths attributed to dementia cohort - age group (65 & over)
 ```{r proportion with chart age}
 plot_ly(shared_deaths_with_chart_age, x = ~year, y = ~proportion, split = ~age_group, meta = ~age_group, hovertext = ~proportion, type = 'bar', 
         color = ~age_group, colors = unname(phsstyles::phs_colour_values)[1:6],
-        hovertemplate = paste0("%{x} <br>", "Age Group: %{meta} <br>", "Proportion of deaths attributed to dementia cohort: %{hovertext}% <br>")) %>% 
+        hovertemplate = paste0("%{x} <br>", "Age Group: %{meta} <br>", "Percent of deaths attributed to dementia cohort: %{hovertext}% <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
-         xaxis = list(title = "Year", showline = FALSE, linecolor = "#b3b3b3",
+         xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
          yaxis = list(title = "%", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
@@ -239,7 +240,7 @@ datatable(shared_deaths_with_chart_age, options = list(dom = 't',
                          pageLength = 42),
           rownames = F,
           selection = 'none',
-          colnames = c("Year", "Area", "Age Group", "Dementia", "Non Dementia", "Proportion Dementia")) %>%
+          colnames = c("Year", "Area", "Age Group", "Dementia Cohort Deaths", "Deaths with no dementia diagnosis", "Percent Dementia")) %>%
   formatCurrency(c('dementia', 'non_dementia'), currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
@@ -250,9 +251,9 @@ Row {.tabset}
 ```{r proportion with chart gender}
 plot_ly(shared_deaths_with_chart_gender, x = ~year, y = ~proportion, split = ~gender, meta = ~gender, hovertext = ~proportion, type = 'bar', 
         color = ~gender, colors = c("#9B4393", "#0078D4"),
-        hovertemplate = paste0("%{x} <br>", "Gender: %{meta} <br>", "Proportion of deaths attributed to dementia: %{hovertext}% <br>")) %>% 
+        hovertemplate = paste0("%{x} <br>", "Gender: %{meta} <br>", "Percent of deaths attributed to dementia cohort: %{hovertext}% <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
-         xaxis = list(title = "Year", showline = FALSE, linecolor = "#b3b3b3",
+         xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
          yaxis = list(title = "%", linecolor = "#b3b3b3", titlefont = list(size = 16))
   ) %>%
@@ -271,7 +272,7 @@ datatable(shared_deaths_with_chart_gender, options = list(dom = 't',
                          pageLength = 42),
           rownames = F,
           selection = 'none',
-          colnames = c("Year", "Area", "Gender", "Dementia", "Non Dementia", "Proportion Dementia")) %>%
+          colnames = c("Year", "Area", "Gender", "Dementia Cohort Deaths", "Deaths with no dementia diagnosis", "Percent Dementia")) %>%
   formatCurrency(c('dementia', 'non_dementia'), currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
@@ -281,21 +282,21 @@ Inputs {.sidebar}
 -----------------------------------------------------------------------
 
 ```{r filter_section GP comparison}
-# deaths_filter_select
+# gp_filter_select
 filter_select("area_select2", "Select an Area",
                                     shared_prev_comparison_65plus_table, group = ~area, allLevels = T, multiple = F)
 ```
 
-**Note:**
+**Notes:**
 
-The figures included in this tab prevalence from the dementia index compared to those from the <a href="https://www.publichealthscotland.scot/publications/general-practice-disease-prevalence-data-visualisation/general-practice-disease-prevalence-visualisation-8-july-2025/" target="_blank">GP Disease Prevalence Dashboard</a>
+The figures included in this tab show GP recorded prevalence from the dementia index compared to those from the <a href="https://www.publichealthscotland.scot/publications/general-practice-disease-prevalence-data-visualisation/general-practice-disease-prevalence-visualisation-8-july-2025/" target="_blank">GP Disease Prevalence Dashboard</a> which contains data extracted from General Practices in Scotland through the Primary Care Information Service (PCIS).
 
 Rates from GP data are reported per 100, therefore rates for the index have been adjusted accordingly on this page.
 
 Row
 -----------------------------------------------------------------------
 
-### Aged 65+ Count Comparison
+### Dementia Count Aged 65+ Comparison
 ```{r 65 plus comparison}
 datatable(shared_prev_comparison_65plus_table, options = list(dom = 't'),
           rownames = F,
@@ -304,10 +305,10 @@ datatable(shared_prev_comparison_65plus_table, options = list(dom = 't'),
   formatCurrency(c('Female', 'Male', 'Total'), currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
-### Dementia Count in Area 65+
+### Dementia Count in Area 65+ Comparison
 ```{r 65 plus chart comparison}
 plot_ly(shared_prev_comparison_65plus_chart, 
-        x = ~year, y = ~individuals, meta = ~group, hovertext = ~individuals, type = 'bar', 
+        x = ~year, y = ~individuals, meta = ~group, hovertext = ~format(individuals, big.mark=',', scientific = FALSE), type = 'bar', 
         color = ~group, split = ~source, colors = unname(phsstyles::phs_colour_values)[1:4],
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
@@ -327,7 +328,7 @@ plot_ly(shared_prev_comparison_65plus_chart,
 Row {.tabset}
 -----------------------------------------------------------------------
 
-### Age Group Split Comparisons
+### Age Group Split Comparisons - Counts
 ```{r age group comparison}
 datatable(shared_prev_comparsion_ages_source_numbers, options = list(dom = 't'),
           rownames = F,
@@ -374,7 +375,7 @@ Row {.tabset}
 plot_ly(shared_simd_total_65plus_ch, 
         x = ~year, y = ~individuals, 
         meta = ~simd2020v2_sc_quintile, split = ~simd2020v2_sc_quintile,
-        hovertext = ~individuals, type = 'bar', 
+        hovertext = ~format(individuals, big.mark=',', scientific = FALSE), type = 'bar', 
         color = ~simd2020v2_sc_quintile, colors = unname(phsstyles::phs_colour_values)[1:5],
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
@@ -412,7 +413,7 @@ Row {.tabset}
 plot_ly(shared_simd_rates_65plus_ch, 
         x = ~year, y = ~round_half_up(rate, digits = 1), 
         meta = ~simd2020v2_sc_quintile, split = ~simd2020v2_sc_quintile,
-        hovertext = ~round_half_up(rate, digits = 1), type = 'bar', 
+        hovertext = ~format(round_half_up(rate, digits = 1), big.mark=',', scientific = FALSE), type = 'bar', 
         color = ~simd2020v2_sc_quintile, colors = unname(phsstyles::phs_colour_values)[1:5],
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
@@ -474,7 +475,7 @@ Row {.tabset}
 plot_ly(shared_simd_total_ch, 
         x = ~age_group, y = ~individuals, 
         meta = ~simd2020v2_sc_quintile, split = ~simd2020v2_sc_quintile,
-        hovertext = ~individuals, type = 'bar', 
+        hovertext = ~format(individuals, big.mark=',', scientific = FALSE), type = 'bar', 
         color = ~simd2020v2_sc_quintile, colors = unname(phsstyles::phs_colour_values)[1:5],
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
@@ -512,7 +513,7 @@ Row {.tabset}
 plot_ly(shared_simd_rates_ch,
         x = ~age_group, y = ~round_half_up(rate, digits = 1),
         meta = ~simd2020v2_sc_quintile, split = ~simd2020v2_sc_quintile,
-        hovertext = ~round_half_up(rate, digits = 1), type = 'bar',
+        hovertext = ~format(round_half_up(rate, digits = 1), big.mark=',', scientific = FALSE), type = 'bar',
         color = ~simd2020v2_sc_quintile, colors = unname(phsstyles::phs_colour_values)[1:5],
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate: %{hovertext} <br>")) %>%
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
@@ -571,7 +572,7 @@ Row {.tabset}
 plot_ly(shared_urc8_65plus_ch, 
         x = ~year, y = ~individuals, 
         meta = ~ur8_name, split = ~ur8_name,
-        hovertext = ~individuals, type = 'bar', 
+        hovertext = ~format(individuals, big.mark=',', scientific = FALSE), type = 'bar', 
         color = ~ur8_name, colors = unname(phsstyles::phs_colour_values)[1:8],
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
@@ -607,7 +608,7 @@ datatable(shared_urc8_65plus_table,
 plot_ly(shared_urc6_65plus_ch, 
         x = ~year, y = ~individuals, 
         meta = ~ur6_name, split = ~ur6_name,
-        hovertext = ~individuals, type = 'bar', 
+        hovertext = ~format(individuals, big.mark=',', scientific = FALSE), type = 'bar', 
         color = ~ur6_name, colors = unname(phsstyles::phs_colour_values)[1:6],
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
@@ -645,9 +646,9 @@ Row {.tabset}
 plot_ly(shared_urc8_65plus_rate_ch,
         x = ~year, y = ~rate,
         meta = ~ur8_name, split = ~ur8_name,
-        hovertext = ~round_half_up(rate, digits = 1), type = 'bar',
+        hovertext = ~format(round_half_up(rate, digits = 1), big.mark=',', scientific = FALSE), type = 'bar',
         color = ~ur8_name, colors = unname(phsstyles::phs_colour_values)[1:8],
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate per 100,000: %{hovertext}% <br>")) %>% 
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate per 100,000: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
@@ -680,9 +681,9 @@ datatable(shared_urc8_65plus_rate_table,
 plot_ly(shared_urc6_65plus_rate_ch,
         x = ~year, y = ~rate,
         meta = ~ur6_name, split = ~ur6_name,
-        hovertext = ~round_half_up(rate, digits = 1), type = 'bar',
+        hovertext = ~format(round_half_up(rate, digits = 1), big.mark=',', scientific = FALSE), type = 'bar',
         color = ~ur6_name, colors = unname(phsstyles::phs_colour_values)[1:6],
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate per 100,000: %{hovertext}% <br>")) %>% 
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate per 100,000: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Financial Year", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),
@@ -741,7 +742,7 @@ Row {.tabset}
 plot_ly(shared_urc8_all_ch, 
         x = ~age_group, y = ~individuals, 
         meta = ~ur8_name, split = ~ur8_name,
-        hovertext = ~individuals, type = 'bar', 
+        hovertext = ~format(individuals, big.mark=',', scientific = FALSE), type = 'bar', 
         color = ~ur8_name, colors = unname(phsstyles::phs_colour_values)[1:8],
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
@@ -776,7 +777,7 @@ datatable(shared_urc8_all_table,
 plot_ly(shared_urc6_all_ch, 
         x = ~age_group, y = ~individuals, 
         meta = ~ur6_name, split = ~ur6_name,
-        hovertext = ~individuals, type = 'bar', 
+        hovertext = ~format(individuals, big.mark=',', scientific = FALSE), type = 'bar', 
         color = ~ur6_name, colors = unname(phsstyles::phs_colour_values)[1:6],
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Individuals: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
@@ -814,7 +815,7 @@ Row {.tabset}
 plot_ly(shared_urc8_all_rate_ch,
         x = ~age_group, y = ~rate,
         meta = ~ur8_name, split = ~ur8_name,
-        hovertext = ~round_half_up(rate, digits = 1), type = 'bar',
+        hovertext = ~format(round_half_up(rate, digits = 1), big.mark=',', scientific = FALSE), type = 'bar',
         color = ~ur8_name, colors = unname(phsstyles::phs_colour_values)[1:8],
         hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate per 100,000: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
@@ -849,9 +850,9 @@ datatable(shared_urc8_all_rate_table,
 plot_ly(shared_urc6_all_rate_ch,
         x = ~age_group, y = ~rate,
         meta = ~ur6_name, split = ~ur6_name,
-        hovertext = ~round_half_up(rate, digits = 1), type = 'bar',
+        hovertext = ~format(round_half_up(rate, digits = 1), big.mark=',', scientific = FALSE), type = 'bar',
         color = ~ur6_name, colors = unname(phsstyles::phs_colour_values)[1:6],
-        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate per 100,000: %{hovertext}% <br>")) %>% 
+        hovertemplate = paste0("%{x} <br>", "%{meta} <br>", "Rate per 100,000: %{hovertext} <br>")) %>% 
   layout(clickmode = "none", showlegend = TRUE, margin = list(l = -5, b = 10, t = 40),
          xaxis = list(title = "Age Group", showline = FALSE, linecolor = "#b3b3b3",
                       categoryorder = "trace", tickangle = -45, titlefont = list(size = 16)),

@@ -205,7 +205,7 @@ index_65plus_rate_comp <- prevalence_all_65plus_rates %>%
   summarise(count_index = sum(individuals),
             pop = sum(pop),
             .by = c(year, hscp2019name, age_group)) %>% 
-  mutate(rate = (count_index/pop)*100000,
+  mutate(rate = (count_index/pop)*100,
          source = 'Dementia Index')
 
 gp_65plus_rate_comp <- gp_data_65plus %>%
@@ -214,7 +214,7 @@ gp_65plus_rate_comp <- gp_data_65plus %>%
          !is.na(hscp2019name)) %>% 
   left_join(list_size_65plus %>% select(year, hscp2019name, x65plus)) %>% 
   fill(x65plus) %>% 
-  mutate(rate = (count_gp_dementia/x65plus)*100000,
+  mutate(rate = (count_gp_dementia/x65plus)*100,
          source = 'GP Dashboard',
          hscp2019name = factor(hscp2019name, levels = area_order, ordered = T)) %>% 
   select(-gender)
@@ -341,6 +341,14 @@ shared_prev_comparsion_ages_source_numbers <- SharedData$new(
 shared_prev_comparsion_ages_source_rates <- SharedData$new(
   prev_comparsion_ages_source_rates %>% 
     rename(area = hscp2019name), key = ~area, group = "Group 3"
+)
+
+shared_prev_comparsion_ages_source_rates_chart <- SharedData$new(
+  prev_comparsion_ages_source_rates_chart <- prev_comparsion_ages_source_rates %>%
+    pivot_longer(cols = `60-64`:`85+`, names_to = 'age_group', values_to = 'rate') %>% 
+    rename(area = hscp2019name) %>% 
+    mutate(key = paste0(area, " ", year)),
+  key = ~key, group = "Group 3 rate"
 )
 
 ### Rates ####
