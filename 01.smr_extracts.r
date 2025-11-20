@@ -190,14 +190,14 @@ smr <- smr %>%
                              substr(other_condition_3,1,3)  =="F00"~other_condition_3,
                              substr(other_condition_4,1,3)  =="F00"~other_condition_4,
                              substr(other_condition_5,1,3)  =="F00"~other_condition_5,
-                             T~"NA")) %>%
+                             T~NA)) %>%
   mutate(g_code = case_when(substr(main_condition,1,3) =="G30"~main_condition,
                             substr(other_condition_1,1,3) =="G30"~other_condition_1,
                             substr(other_condition_2,1,3) =="G30"~other_condition_2,
                             substr(other_condition_3,1,3) =="G30"~other_condition_3,
                             substr(other_condition_4,1,3) =="G30"~other_condition_4,
                             substr(other_condition_5,1,3) =="G30"~other_condition_5, 
-                            T~"NA")) %>%
+                            T~NA)) %>%
   ##flag lewy codes
   mutate(lewy_f = case_when(main_condition =="F028 A"  ~main_condition, 
                             other_condition_1 =="F028 A" ~other_condition_1,

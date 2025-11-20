@@ -312,12 +312,12 @@ dementia_index <- dementia_index %>%
          age_at_diagnosis = age_diag, 
          hbres = hb2019name, hbres_code= hb2019) %>% 
   # use chi_age & dob when age is less than 18 or greater than 120
-  mutate(age_at_diagnosis = case_when(age_at_diagnosis < 18 | age_at_diagnosis > 120 ~ chi_age_at_diagnosis,
-                                      is.na(age_at_diagnosis) ~ chi_age_at_diagnosis,
-                                      .default = age_at_diagnosis),
-         date_of_birth = case_when(age_at_diagnosis < 18 | age_at_diagnosis > 120 ~ chi_dob,
+  mutate(date_of_birth = case_when(age_at_diagnosis < 18 | age_at_diagnosis > 120 ~ chi_dob,
                                    is.na(date_of_birth) ~ chi_dob,
-                                   .default = date_of_birth)) %>%
+                                   .default = date_of_birth),
+         age_at_diagnosis = case_when(age_at_diagnosis < 18 | age_at_diagnosis > 120 ~ chi_age_at_diagnosis,
+                                      is.na(age_at_diagnosis) ~ chi_age_at_diagnosis,
+                                      .default = age_at_diagnosis)) %>%
   select(-c(chi_age_at_diagnosis, chi_dob))
 
 names(dementia_index)
