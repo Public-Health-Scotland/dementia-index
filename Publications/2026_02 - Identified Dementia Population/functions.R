@@ -290,16 +290,8 @@ calculate_easr_age <- function(data, epop_total,
                         "16" = 4000, "17" = 2500, "18" = 1500, "19" = 1000)
   } else if (epop_age == "18+") {
     data$epop <- recode(as.character(data$epop), 
-                        "4" = 2200, "5" = 6000, "6" = 6000, "7" = 6500, 
-                        "8" = 7000, "9" = 7000, "10" = 7000, "11" = 7000, 
-                        "12" = 6500, "13" = 6000, "14" = 5500, "15" = 5000, 
+                        "1" = 55200, "13" = 6000, "14" = 5500, "15" = 5000, 
                         "16" = 4000, "17" = 2500, "18" = 1500, "19" = 1000) # 80,700
-  } else if (epop_age == "16+") {
-    data$epop <- recode(as.character(data$age_group), 
-                        "4" = 4400, "5" = 6000, "6" = 6000, "7" = 6500, 
-                        "8" = 7000, "9" = 7000, "10" = 7000, "11" = 7000, 
-                        "12" = 6500, "13" = 6000, "14" = 5500, "15" = 5000, 
-                        "16" = 4000, "17" = 2500, "18" = 1500, "19" = 1000)
   }
   
   # Calculating individual easr and variance
@@ -321,7 +313,7 @@ calculate_easr_age <- function(data, epop_total,
   
   # Calculating rates and confidence intervals
   data <- data |>
-    mutate(epop_total = epop*2,  # Total EPOP population
+    mutate(epop_total = epop*2,  # Total EPOP population - epop is different for each age group so double epop set above to get the total
            easr = easr_first/epop_total, # easr calculation
            o_lower = numerator * (1 - (1/(9 * numerator)) - (1.96/(3 * sqrt(numerator))))^3,  # Lower CI
            o_upper = (numerator + 1)*(1 - (1/(9 * (numerator + 1))) +
