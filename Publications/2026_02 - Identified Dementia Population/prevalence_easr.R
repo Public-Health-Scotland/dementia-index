@@ -58,7 +58,7 @@ prevalence <- bind_rows(lapply(year_end_dates, prev_pl_df_easr, df = index))
 
 ### Total #### 
 #### Chart Data ####
-scotland_total <- scot_pops_easr %>%
+scotland_total <- scot_pops_easr_18plus %>%
   filter(between(cal_year, 2020, 2023)) %>% 
   left_join(prevalence %>%
               mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
@@ -73,24 +73,7 @@ scotland_total <- scot_pops_easr %>%
 
 scotland_total_chart <- scotland_total %>%
   left_join(easr_pops) %>% 
-  calculate_easr(epop_total = max_epop, area_type = first(area_type), epop_age = 'normal')
-
-scotland_total_18plus <- scot_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2023)) %>% 
-  left_join(prevalence %>%
-              mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
-              summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>%
-  relocate(year, .before = area) %>%
-  mutate(area_type = 'National', .after = area) %>%
-  mutate(numerator = case_when(is.na(individuals) ~ 0,
-                               .default = individuals),
-         denominator = pop, .after = sex) %>% 
-  select(-c(cal_year, individuals, pop)) %>% 
-  fill(year, .direction = 'up')
-
-scotland_total_chart_18plus <- scotland_total_18plus %>%
-  left_join(easr_pops) %>% 
-  calculate_easr(epop_total = 161400, area_type = first(area_type), epop_age = '18+')
+  calculate_easr(epop_total = max_epop_18plus, area_type = first(area_type), epop_age = '18+')
 
 chart_colours <- unname(phs_colour_values)
 chart_annotation_colour <- 'white'
@@ -123,37 +106,7 @@ scotland_table_count <- scotland_total_table %>%
   pivot_wider(names_from = Year, values_from = Individuals)
 
 ### Age Distribution ####
-
-scotland_age_totals <- scot_age_pops_easr %>%
-  filter(between(cal_year, 2020, 2023)) %>% 
-  left_join(prevalence %>% 
-              mutate(area = factor('Scotland', levels = area_order, ordered = T),
-                     age_group = case_when(age_group < '60-64' ~ 'Under 59',
-                                           .default = age_group),
-                     age_group = factor(age_group, levels = age_order2, ordered = T)) %>%
-              summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>% 
-  relocate(year, .before = area) %>%
-  mutate(area_type = 'National', .after = area) %>%
-  mutate(numerator = case_when(is.na(individuals) ~ 0,
-                               .default = individuals),
-         denominator = pop, .after = sex) %>% 
-  select(-c(cal_year, individuals, pop)) %>% 
-  fill(year, .direction = 'up')
-
-scotland_age_chart <- scotland_age_totals %>%
-  # Create a group for the under 59s (check if this is valid practice)
-  # function will be amended so 1 == 74500 sized population (addition on groups 1 - 12)
-  left_join(easr_pops %>% 
-              mutate(age_group = case_when(age_group < "60-64" ~ "Under 59",
-                                           .default = age_group),
-                     age_group = factor(age_group, levels = age_order2, ordered = T),
-                     epop = case_when(age_group == 'Under 59' ~ 1,
-                                      .default = epop)) %>% 
-              distinct()) %>% 
-  # function to handle the age groups
-  calculate_easr_age(epop_total = max_epop, area_type = first(area_type), epop_age = 'normal')
-
-scotland_age_totals_18plus <- scot_age_pops_easr_18plus %>%
+scotland_age_totals <- scot_age_pops_easr_18plus %>%
   filter(between(cal_year, 2020, 2023)) %>% 
   left_join(prevalence %>% 
               mutate(area = factor('Scotland', levels = area_order, ordered = T),
@@ -169,9 +122,9 @@ scotland_age_totals_18plus <- scot_age_pops_easr_18plus %>%
   select(-c(cal_year, individuals, pop)) %>% 
   fill(year, .direction = 'up')
 
-scotland_age_chart_18plus <- scotland_age_totals_18plus %>%
+scotland_age_chart <- scotland_age_totals %>%
   # Create a group for the under 59s (check if this is valid practice)
-  # function will be amended so 1 == 74500 sized population (addition on groups 1 - 12)
+  # function will be amended so 1 == 55200 sized population (addition on groups 4-12 using age groups 18 and 19 in group 4, 1100 pop each)
   left_join(easr_pops %>% 
               mutate(age_group = case_when(age_group < "60-64" ~ "18-59",
                                            .default = age_group),
@@ -180,7 +133,7 @@ scotland_age_chart_18plus <- scotland_age_totals_18plus %>%
                                       .default = epop)) %>% 
               distinct()) %>% 
   # function to handle the age groups
-  calculate_easr_age(epop_total = max_epop_18plus, area_type = first(area_type), epop_age = 'normal')
+  calculate_easr_age(epop_total = max_epop_18plus, area_type = first(area_type), epop_age = '18+')
 
 
 scotland_age_table <- scotland_age_chart_18plus %>%
@@ -213,7 +166,7 @@ chart_scotland_age <- ggplot(scotland_age_chart %>% filter(year == max(year))) +
 
 ### Sex ####
 #### Chart Data ####
-scotland_sex_total <- scot_pops_easr %>%
+scotland_sex_total <- scot_pops_easr_18plus %>%
   filter(between(cal_year, 2020, 2023)) %>% 
   left_join(prevalence %>%
               mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
@@ -229,31 +182,11 @@ scotland_sex_total <- scot_pops_easr %>%
 scotland_sex_total_chart <- scotland_sex_total %>%
   left_join(easr_pops) %>% 
   # use half the total epop as we are splitting between sex
-  calculate_easr_sex(epop_total = 100000, area_type = first(area_type), epop_age = 'normal') %>% 
-  mutate(sex = case_when(sex == 1 ~ 'Male',
-                         .default = 'Female'))
-
-scotland_sex_total_18plus <- scot_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2023)) %>% 
-  left_join(prevalence %>%
-              mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
-              summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>%
-  relocate(year, .before = area) %>%
-  mutate(area_type = 'National', .after = area) %>%
-  mutate(numerator = case_when(is.na(individuals) ~ 0,
-                               .default = individuals),
-         denominator = pop, .after = sex) %>% 
-  select(-c(cal_year, individuals, pop)) %>% 
-  fill(year, .direction = 'up')
-
-scotland_sex_total_chart_18plus <- scotland_sex_total_18plus %>%
-  left_join(easr_pops) %>% 
-  # use half the total epop as we are splitting between sex
   calculate_easr_sex(epop_total = max_epop_18plus/2, area_type = first(area_type), epop_age = 'normal') %>% 
   mutate(sex = case_when(sex == 1 ~ 'Male',
                          .default = 'Female'))
 
-scotland_sex_table <- scotland_sex_total_chart_18plus %>% 
+scotland_sex_table <- scotland_sex_total_chart %>% 
   select(Year = year, Area = area, Sex = sex, Individuals = numerator, Rate = rate) 
 
 scotland_sex_table_rate <- scotland_sex_table %>% 
@@ -283,7 +216,7 @@ ggplot(scotland_sex_total_chart %>% rename(Sex = sex)) +
   theme(legend.title = element_blank(), legend.text = element_text(size = 16))
 
 ### Deprivation ####
-scotland_dep_total <- simd_pops_easr %>%
+scotland_dep_total <- simd_pops_easr_18plus %>%
   filter(between(cal_year, 2020, 2023)) %>% 
   left_join(prevalence %>%
               mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
@@ -303,31 +236,9 @@ scotland_dep_total <- simd_pops_easr %>%
 
 scotland_dep_total_chart <- scotland_dep_total %>%
   left_join(easr_pops) %>%
-  calculate_easr(epop_total = max_epop, area_type = first(area_type), epop_age = 'normal')
-
-scotland_dep_total_18plus <- simd_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2023)) %>% 
-  left_join(prevalence %>%
-              mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
-              summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex, simd2020v2_sc_quintile))) %>%
-  relocate(year, .before = area) %>%
-  mutate(area_type = 'National', .after = area) %>%
-  mutate(quintile = case_match(simd2020v2_sc_quintile,
-                               1 ~ '1 (Most Deprived)',
-                               5 ~ '5 (Least Deprived)',
-                               .default = as.character(simd2020v2_sc_quintile)),
-         .before = simd2020v2_sc_quintile) %>% 
-  mutate(numerator = case_when(is.na(individuals) ~ 0,
-                               .default = individuals),
-         denominator = pop, .after = quintile) %>% 
-  select(-c(cal_year, simd2020v2_sc_quintile, individuals, pop)) %>% 
-  fill(year, .direction = 'up')
-
-scotland_dep_total_chart_18plus <- scotland_dep_total_18plus %>%
-  left_join(easr_pops) %>%
   calculate_easr(epop_total = max_epop_18plus, area_type = first(area_type), epop_age = 'normal')
 
-scotland_dep_table <- scotland_dep_total_chart_18plus %>% 
+scotland_dep_table <- scotland_dep_total_chart %>% 
   select(Year = year, Area = area, Quintile = quintile, Individuals = numerator, Rate = rate)
 
 scotland_dep_table_rate <- scotland_dep_table %>% 
@@ -395,7 +306,7 @@ ggplot(scotland_dep_total_chart) +
   
 
 ## Health Board - Total ####
-hb_total <- hb_pops_easr %>%
+hb_total <- hb_pops_easr_18plus %>%
   filter(between(cal_year, 2020, 2023)) %>% 
   left_join(prevalence %>%
               mutate(area = factor(hbres, levels = area_order, ordered = T)) %>%
@@ -410,28 +321,10 @@ hb_total <- hb_pops_easr %>%
 
 hb_total_chart <- hb_total %>%
   left_join(easr_pops) %>% 
-  calculate_easr(epop_total = max_epop, epop_age = 'normal', area_type = first(area_type)) %>% 
-  bind_rows(scotland_total_chart)
-
-hb_total_18plus <- hb_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2023)) %>% 
-  left_join(prevalence %>%
-              mutate(area = factor(hbres, levels = area_order, ordered = T)) %>%
-              summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>%
-  relocate(year, .before = area) %>%
-  mutate(area_type = 'HB', .after = area) %>%
-  mutate(numerator = case_when(is.na(individuals) ~ 0,
-                               .default = individuals),
-         denominator = pop, .after = sex) %>% 
-  select(-c(cal_year, individuals, pop)) %>% 
-  fill(year, .direction = 'up')
-
-hb_total_chart_18plus <- hb_total_18plus %>%
-  left_join(easr_pops) %>% 
   calculate_easr(epop_total = max_epop_18plus, epop_age = 'normal', area_type = first(area_type)) %>% 
   bind_rows(scotland_total_chart_18plus)
 
-hb_total_table <- hb_total_chart_18plus %>%
+hb_total_table <- hb_total_chart %>%
   arrange(area_type, area) %>% 
   select(Year = year, Area = area, Individuals = numerator, Rate = rate)
 
@@ -464,7 +357,7 @@ ggplot(hb_total_chart %>% filter(year == max(year)),
 
 
 ## HSCP - Total ####
-hscp_total <- hscp_pops_easr %>%
+hscp_total <- hscp_pops_easr_18plus %>%
   filter(between(cal_year, 2020, 2023)) %>% 
   left_join(prevalence %>%
               mutate(area = factor(hscp2019name, levels = area_order, ordered = T)) %>%
@@ -478,24 +371,6 @@ hscp_total <- hscp_pops_easr %>%
   fill(year, .direction = 'up')
 
 hscp_total_chart <- hscp_total %>%
-  left_join(easr_pops) %>% 
-  calculate_easr(epop_total = 200000, epop_age = 'normal', area_type = first(area_type)) %>% 
-  bind_rows(scotland_total_chart)
-
-hscp_total_18plus <- hscp_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2023)) %>% 
-  left_join(prevalence %>%
-              mutate(area = factor(hscp2019name, levels = area_order, ordered = T)) %>%
-              summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>%
-  relocate(year, .before = area) %>%
-  mutate(area_type = 'HSCP', .after = area) %>%
-  mutate(numerator = case_when(is.na(individuals) ~ 0,
-                               .default = individuals),
-         denominator = pop, .after = sex) %>% 
-  select(-c(cal_year, individuals, pop)) %>% 
-  fill(year, .direction = 'up')
-
-hscp_total_chart_18plus <- hscp_total_18plus %>%
   left_join(easr_pops) %>% 
   calculate_easr(epop_total = max_epop_18plus, epop_age = 'normal', area_type = first(area_type)) %>% 
   bind_rows(scotland_total_chart_18plus)
