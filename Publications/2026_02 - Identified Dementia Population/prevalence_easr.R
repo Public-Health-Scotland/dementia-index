@@ -14,7 +14,7 @@ library(scales)
 library(plotly)
 
 # Dementia Index - Publication Charts and Tables
-# Years 2020-2024
+# Years 2020/21-2023/24
 
 # import data ####
 code_folder <- paste0(here::here(), "/Publications/2026_02 - Identified Dementia Population/")
@@ -48,7 +48,6 @@ max_epop_18plus <- 161400
 
 # Recorded Prevalence ####
 # get prevalence data for each patient per year
-# prevalence <- bind_rows(lapply(year_end_dates, prev_pl_df, df = index))
 
 # use easr for rates
 prevalence <- bind_rows(lapply(year_end_dates, prev_pl_df_easr, df = index))
@@ -182,7 +181,7 @@ scotland_sex_total <- scot_pops_easr_18plus %>%
 scotland_sex_total_chart <- scotland_sex_total %>%
   left_join(easr_pops) %>% 
   # use half the total epop as we are splitting between sex
-  calculate_easr_sex(epop_total = max_epop_18plus/2, area_type = first(area_type), epop_age = 'normal') %>% 
+  calculate_easr_sex(epop_total = max_epop_18plus/2, area_type = first(area_type), epop_age = '18+') %>% 
   mutate(sex = case_when(sex == 1 ~ 'Male',
                          .default = 'Female'))
 
@@ -211,7 +210,7 @@ ggplot(scotland_sex_total_chart %>% rename(Sex = sex)) +
   scale_colour_manual(values = c(chart_colours[1:2]))  +
   
   scale_y_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 1250)) +
+                     limits = c(0, 1500)) +
   theme_dash() +
   theme(legend.title = element_blank(), legend.text = element_text(size = 16))
 
@@ -236,7 +235,7 @@ scotland_dep_total <- simd_pops_easr_18plus %>%
 
 scotland_dep_total_chart <- scotland_dep_total %>%
   left_join(easr_pops) %>%
-  calculate_easr(epop_total = max_epop_18plus, area_type = first(area_type), epop_age = 'normal')
+  calculate_easr(epop_total = max_epop_18plus, area_type = first(area_type), epop_age = '18+')
 
 scotland_dep_table <- scotland_dep_total_chart %>% 
   select(Year = year, Area = area, Quintile = quintile, Individuals = numerator, Rate = rate)
@@ -260,7 +259,7 @@ ggplot(scotland_dep_total_chart %>% filter(year == max(year)),
   #         subtitle = 'Rate per 100,000 population (18 plus)') +
   ggtitle("") +
   scale_x_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 1500)) +
+                     limits = c(0, 1600)) +
   scale_colour_manual(values = c(chart_colours[1:5], chart_annotation_colour)) +
   scale_fill_manual(values = c(chart_colours[1:5], chart_annotation_colour)) +
   # scale_y_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
@@ -282,7 +281,7 @@ ggplot(scotland_dep_total_chart %>% filter(year == max(year)) %>%
   #         subtitle = 'Rate per 100,000 population (18 plus)') +
   ggtitle("") +
   scale_x_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 1500)) +
+                     limits = c(0, 1600)) +
   scale_colour_manual(values = c(chart_colours[1], chart_annotation_colour)) +
   scale_fill_manual(values = c(chart_colours[1], chart_annotation_colour)) +
   # scale_y_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
@@ -300,7 +299,7 @@ ggplot(scotland_dep_total_chart) +
   labs(x = 'Financial Year', y = 'Rate per 100,000') +
   scale_colour_manual(values = chart_colours[1:5])  +
   scale_y_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 1500)) +
+                     limits = c(0, 1600)) +
   
   theme_dash()
   
@@ -321,8 +320,8 @@ hb_total <- hb_pops_easr_18plus %>%
 
 hb_total_chart <- hb_total %>%
   left_join(easr_pops) %>% 
-  calculate_easr(epop_total = max_epop_18plus, epop_age = 'normal', area_type = first(area_type)) %>% 
-  bind_rows(scotland_total_chart_18plus)
+  calculate_easr(epop_total = max_epop_18plus, epop_age = '18+', area_type = first(area_type)) %>% 
+  bind_rows(scotland_total_chart)
 
 hb_total_table <- hb_total_chart %>%
   arrange(area_type, area) %>% 
@@ -347,7 +346,7 @@ ggplot(hb_total_chart %>% filter(year == max(year)),
   #         subtitle = 'Rate per 100,000 population (18 plus)') +
   ggtitle("") +
   scale_x_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 1250)) +
+                     limits = c(0, 1500)) +
   scale_colour_manual(values = c(chart_colours[1:2], chart_annotation_colour)) +
   scale_fill_manual(values = c(chart_colours[1:2], chart_annotation_colour)) +
   # scale_y_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
@@ -372,7 +371,7 @@ hscp_total <- hscp_pops_easr_18plus %>%
 
 hscp_total_chart <- hscp_total %>%
   left_join(easr_pops) %>% 
-  calculate_easr(epop_total = max_epop_18plus, epop_age = 'normal', area_type = first(area_type)) %>% 
+  calculate_easr(epop_total = max_epop_18plus, epop_age = '18+', area_type = first(area_type)) %>% 
   bind_rows(scotland_total_chart_18plus)
 
 hscp_total_table <- hscp_total_chart %>%
@@ -399,7 +398,7 @@ ggplot(hscp_total_chart %>% filter(year == max(year)),
   #         subtitle = 'Rate per 100,000 population (18 plus)') +
   ggtitle("") +
   scale_x_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 1500)) +
+                     limits = c(0, 1750)) +
   scale_colour_manual(values = c(chart_colours[1:2], chart_annotation_colour)) +
   scale_fill_manual(values = c(chart_colours[1:2], chart_annotation_colour)) +
   # scale_y_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
@@ -412,17 +411,17 @@ ggplot(hscp_total_chart %>% filter(year == max(year)),
 # save out table data
 table_data <- list(
   "Scotland total - Rate" = scotland_table_rate,
-  "Scotland total - Count" = scotland_table_count,
   "Sex split - Rate" = scotland_sex_table_rate,
-  "Sex split - Count" = scotland_sex_table_count,
   "Age split - Rate" = scotland_age_table_rate,
-  "Age split - Count" = scotland_age_table_count,
   "Deprivation - Rate" = scotland_dep_table_rate,
-  "Deprivation - Count" = scotland_dep_table_count,
   "Health Boards - Rate" = hb_table_rate,
-  "Health Boards - Count" = hb_table_count,
   "HSCP - Rate" = hscp_table_rate,
+  "Scotland total - Count" = scotland_table_count,
+  "Sex split - Count" = scotland_sex_table_count,
+  "Age split - Count" = scotland_age_table_count,
+  "Deprivation - Count" = scotland_dep_table_count,
+  "Health Boards - Count" = hb_table_count,
   "HSCP - Count" = hscp_table_count
 )
 
-writexl::write_xlsx(table_data, '/PHI_conf/Dementia_Index/outputs/Publication 2026-02/chart_table_data.xlsx')
+writexl::write_xlsx(table_data, '/PHI_conf/Dementia_Index/outputs/Publication 2026-02/chart_table_data_18plus_rates.xlsx')

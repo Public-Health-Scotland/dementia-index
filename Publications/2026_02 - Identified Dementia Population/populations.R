@@ -216,6 +216,6 @@ simd_pops_easr_18plus <- dz_pop %>%
   arrange(area, cal_year, age_group, simd2020v2_sc_quintile, sex)
 
 simd_pops_easr_18plus %<>% 
-  bind_rows(simd_pops_easr %>% 
+  bind_rows(simd_pops_easr_18plus %>% 
               filter(cal_year == 2022) %>% 
               mutate(cal_year = 2023)) %>% distinct()
