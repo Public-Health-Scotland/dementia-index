@@ -1,72 +1,5 @@
 # functions for publication code
 
-# get patient level prevalence data
-prev_pl_df <- function(df, date_end_yr){
-  # function takes in the index data (df) and date at the end of the year (either calendar or fy)
-  
-  df <- df %>%
-    # calculate age at end of the financial year
-    mutate(age_at_eoy = floor(time_length(interval(date_of_birth, date_end_yr), 'years')),
-           # inv dash looks like it use one instance of age at times and not calculating at each year from SLF
-           # age_group = create_age_groups(age_at_diagnosis, from = 0, to = 90, by = 5, as_factor = TRUE),
-           age_group = case_when(age_at_eoy < 60 ~ "18-59",
-                                 .default = create_age_groups(age_at_eoy, from = 60, to = 90, by = 5, as_factor = TRUE)),
-           age_group = factor(age_group, levels = age_order, ordered = T),
-           sex = case_when(sex == 1 ~ 'Male',
-                              sex == 2 ~ "Female",
-                              .default = NA),
-           diag_year = extract_fin_year(diagnosis_date))
-  
-  
-  fy_yr1 <- substr(date_end_yr, 1, 4)
-  fy_date <- paste0(as.character(as.numeric(fy_yr1)-1), "/", substr(fy_yr1, 3, 4))
-  
-  prev_year <- df %>% 
-    filter(diagnosis_date <= date_end_yr,
-           # keep those with a date of death greater than the end of that year
-           # or those who have not died but were diagnosed by that point
-           (date_of_death > date_end_yr | is.na(date_of_death))
-    ) %>% 
-    mutate(year = fy_date,
-           hscp2019name = factor(hscp2019name, levels = area_order, ordered = T),
-           hbres = factor(hbres, levels = area_order, ordered = T),
-           cal_year = as.numeric(substr(year, 1, 4))) %>% 
-    select(year, cal_year, postcode, hscp2019name, hbres, age_group, sex, simd2020v2_sc_quintile, source)
-}
-
-theme_dash <- function() {
-  theme(plot.title = element_text(face = "bold", size = 25, hjust = 0.5), 
-        plot.subtitle = element_text(size = 20, margin = margin(0,0,25,0), hjust = 0.5), axis.title = element_text(size = 20),
-        panel.background = element_blank(),
-        panel.grid.major.y = element_line(colour = 'lightgrey', linewidth = .25),
-        axis.line.x.bottom = element_line(colour = 'black', linewidth = 0.25),
-        axis.ticks = element_blank(),
-        axis.text = element_text(face = "bold", size = 18))
-}
-
-theme_bar <- function(base_size = 14) {
-  theme_classic(base_size = base_size) +
-    theme(
-      # margin - t, r, b , l
-      plot.margin = margin(5, 25, 5, 5),
-      plot.title = element_text(face = "bold", size = 25, hjust = 0.5), 
-      plot.subtitle = element_text(size = 20, margin = margin(0,0,25,0), hjust = 0.5), axis.title = element_text(size = 20),
-      legend.position = "none",
-      panel.grid.major.y = element_line(color = "#878787", linewidth = 0.25, linetype = 2),
-      axis.ticks.x = element_blank(), axis.line.x = element_blank(), axis.text.x = element_text(vjust = 0.5, hjust = 0.5, face = "bold", size = 18), #angle = 50),
-      axis.ticks.y = element_blank(), axis.line.y = element_blank(), axis.text.y = element_text(face = "bold", size = 18)
-    )
-}
-
-bttn_remove <-  list('select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d',
-                     'autoScale2d',   'toggleSpikelines',  'hoverCompareCartesian',
-                     'hoverClosestCartesian')
-
-remove_modebar_buttons <- function() {
-  config(modeBarButtonsToRemove = bttn_remove, displaylogo = FALSE)
-}
-
-
 ## EASR Functions ####
 # Outputs prevalence data in 5 year age groups upto 90+
 prev_pl_df_easr <- function(df, date_end_yr){
@@ -100,6 +33,9 @@ prev_pl_df_easr <- function(df, date_end_yr){
 
 # Functions below adapted from ScotPHO code
 # https://github.com/Public-Health-Scotland/scotpho-indicator-production/blob/0ee39f19bf3b4960a12d1a50eccc1976f8d29888/functions/helper%20functions/calculate_easr.R
+
+# epop_total - the total european population for the ages needed. For all ages the Epop_total = 200000 (100000 per sex group)
+# https://github.com/Public-Health-Scotland/scotpho-indicator-production/blob/master/1.indicator_analysis.R
 calculate_easr <- function(data, epop_total,
                            area_type,
                            epop_age = c("normal", "18+", "16+")){
@@ -121,7 +57,7 @@ calculate_easr <- function(data, epop_total,
                         "9" = 7000, "10" = 7000, "11" =7000, "12" = 6500, 
                         "13" = 6000, "14" = 5500, "15" = 5000,
                         "16" = 4000, "17" = 2500, "18" = 1500, "19" = 1000)
-  } else if (epop_age == "18+") {
+  } else if (epop_age == "18+") { # added for dementia analysis
     data$epop <- recode(as.character(data$epop), 
                         "4" = 2200, "5" = 6000, "6" = 6000, "7" = 6500, 
                         "8" = 7000, "9" = 7000, "10" = 7000, "11" = 7000, 
@@ -184,7 +120,7 @@ calculate_easr <- function(data, epop_total,
   
 }
 
-
+# Same as above but only drops age group column and groups by sex 
 calculate_easr_sex <- function(data, epop_total,
                            area_type,
                            epop_age = c("normal", "18+", "16+")){
@@ -206,7 +142,7 @@ calculate_easr_sex <- function(data, epop_total,
                         "9" = 7000, "10" = 7000, "11" =7000, "12" = 6500, 
                         "13" = 6000, "14" = 5500, "15" = 5000,
                         "16" = 4000, "17" = 2500, "18" = 1500, "19" = 1000)
-  } else if (epop_age == "18+") {
+  } else if (epop_age == "18+") { # added for dementia analysis
     data$epop <- recode(as.character(data$epop), 
                         "4" = 2200, "5" = 6000, "6" = 6000, "7" = 6500, 
                         "8" = 7000, "9" = 7000, "10" = 7000, "11" = 7000, 
@@ -232,7 +168,7 @@ calculate_easr_sex <- function(data, epop_total,
   
   # aggregating by year, code and time
   data <- data |>
-    select(-c(age_group))|>
+    select(-c(age_group))|> # only drop age groups here and group by sex below
     group_by(across(any_of(c("year", "area", "area_type", "sex")))) |>
     summarise_all(sum, na.rm =T) |>
     ungroup()
@@ -269,7 +205,7 @@ calculate_easr_sex <- function(data, epop_total,
   
 }
 
-
+# Same as first but only drops sex column and groups by age group
 calculate_easr_age <- function(data, epop_total,
                                area_type,
                                epop_age = c("normal", "18+", "16+")){
@@ -283,12 +219,12 @@ calculate_easr_age <- function(data, epop_total,
   
   epop_age <- rlang::arg_match(epop_age)
   
-  
+  # 1 group represents 0-59 for "normal", 18-59 for "18+"
   if (epop_age == "normal") {
     data$epop <- recode(as.character(data$epop), 
                         "1" = 74500, "13" = 6000, "14" = 5500, "15" = 5000,
-                        "16" = 4000, "17" = 2500, "18" = 1500, "19" = 1000)
-  } else if (epop_age == "18+") {
+                        "16" = 4000, "17" = 2500, "18" = 1500, "19" = 1000) # 100,000
+  } else if (epop_age == "18+") { # added for dementia analysis
     data$epop <- recode(as.character(data$epop), 
                         "1" = 55200, "13" = 6000, "14" = 5500, "15" = 5000, 
                         "16" = 4000, "17" = 2500, "18" = 1500, "19" = 1000) # 80,700
@@ -306,14 +242,14 @@ calculate_easr_age <- function(data, epop_total,
   
   # aggregating by year, code and time
   data <- data |>
-    select(-c(sex))|>
+    select(-c(sex))|> # drop sex and group by age group
     group_by(across(any_of(c("year", "area", "area_type", "age_group")))) |>
     summarise_all(sum, na.rm =T) |>
     ungroup()
   
   # Calculating rates and confidence intervals
   data <- data |>
-    mutate(epop_total = epop*2,  # Total EPOP population - epop is different for each age group so double epop set above to get the total
+    mutate(epop_total = epop*2,  # Total EPOP population - epop is different for each age group so double epop set above in if statements to get the total
            easr = easr_first/epop_total, # easr calculation
            o_lower = numerator * (1 - (1/(9 * numerator)) - (1.96/(3 * sqrt(numerator))))^3,  # Lower CI
            o_upper = (numerator + 1)*(1 - (1/(9 * (numerator + 1))) +
@@ -341,4 +277,38 @@ calculate_easr_age <- function(data, epop_total,
   
   return(data)
   
+}
+
+
+## Chart functions ####
+theme_dash <- function() {
+  theme(plot.title = element_text(face = "bold", size = 25, hjust = 0.5), 
+        plot.subtitle = element_text(size = 20, margin = margin(0,0,25,0), hjust = 0.5), axis.title = element_text(size = 20),
+        panel.background = element_blank(),
+        panel.grid.major.y = element_line(colour = 'lightgrey', linewidth = .25),
+        axis.line.x.bottom = element_line(colour = 'black', linewidth = 0.25),
+        axis.ticks = element_blank(),
+        axis.text = element_text(face = "bold", size = 18))
+}
+
+theme_bar <- function(base_size = 14) {
+  theme_classic(base_size = base_size) +
+    theme(
+      # margin - t, r, b , l
+      plot.margin = margin(5, 25, 5, 5),
+      plot.title = element_text(face = "bold", size = 25, hjust = 0.5), 
+      plot.subtitle = element_text(size = 20, margin = margin(0,0,25,0), hjust = 0.5), axis.title = element_text(size = 20),
+      legend.position = "none",
+      panel.grid.major.y = element_line(color = "#878787", linewidth = 0.25, linetype = 2),
+      axis.ticks.x = element_blank(), axis.line.x = element_blank(), axis.text.x = element_text(vjust = 0.5, hjust = 0.5, face = "bold", size = 18), #angle = 50),
+      axis.ticks.y = element_blank(), axis.line.y = element_blank(), axis.text.y = element_text(face = "bold", size = 18)
+    )
+}
+
+bttn_remove <-  list('select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d',
+                     'autoScale2d',   'toggleSpikelines',  'hoverCompareCartesian',
+                     'hoverClosestCartesian')
+
+remove_modebar_buttons <- function() {
+  config(modeBarButtonsToRemove = bttn_remove, displaylogo = FALSE)
 }
