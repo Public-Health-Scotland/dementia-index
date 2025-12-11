@@ -220,15 +220,31 @@ calculate_easr_age <- function(data, epop_total,
   epop_age <- rlang::arg_match(epop_age)
   
   # 1 group represents 0-59 for "normal", 18-59 for "18+"
+  # if (epop_age == "normal") {
+  #   data$epop <- recode(as.character(data$epop), 
+  #                       "1" = 74500, "13" = 6000, "14" = 5500, "15" = 5000,
+  #                       "16" = 4000, "17" = 2500, "18" = 1500, "19" = 1000) # 100,000
+  # } else if (epop_age == "18+") { # added for dementia analysis
+  #   data$epop <- recode(as.character(data$epop), 
+  #                       "1" = 55200, "13" = 6000, "14" = 5500, "15" = 5000, 
+  #                       "16" = 4000, "17" = 2500, "18" = 1500, "19" = 1000) # 80,700
+  # }
+  
   if (epop_age == "normal") {
     data$epop <- recode(as.character(data$epop), 
-                        "1" = 74500, "13" = 6000, "14" = 5500, "15" = 5000,
-                        "16" = 4000, "17" = 2500, "18" = 1500, "19" = 1000) # 100,000
+                        "1" = 5000, "2" = 5500, "3" = 5500, "4" = 5500, 
+                        "5" = 6000, "6" = 6000, "7" = 6500, "8" = 7000, 
+                        "9" = 7000, "10" = 7000, "11" =7000, "12" = 6500, 
+                        "13" = 6000, "14" = 5500, "15" = 5000,
+                        "16" = 4000, "17" = 2500, "18" = 1500, "19" = 1000)
   } else if (epop_age == "18+") { # added for dementia analysis
     data$epop <- recode(as.character(data$epop), 
-                        "1" = 55200, "13" = 6000, "14" = 5500, "15" = 5000, 
+                        "4" = 2200, "5" = 6000, "6" = 6000, "7" = 6500, 
+                        "8" = 7000, "9" = 7000, "10" = 7000, "11" = 7000, 
+                        "12" = 6500, "13" = 6000, "14" = 5500, "15" = 5000, 
                         "16" = 4000, "17" = 2500, "18" = 1500, "19" = 1000) # 80,700
   }
+  
   
   # Calculating individual easr and variance
   data <- data |>
@@ -242,14 +258,14 @@ calculate_easr_age <- function(data, epop_total,
   
   # aggregating by year, code and time
   data <- data |>
-    select(-c(sex))|> # drop sex and group by age group
-    group_by(across(any_of(c("year", "area", "area_type", "age_group")))) |>
+    select(-c(sex, age_group))|> # drop sex and group by age group
+    group_by(across(any_of(c("year", "area", "area_type", "age_group2")))) |>
     summarise_all(sum, na.rm =T) |>
     ungroup()
   
   # Calculating rates and confidence intervals
   data <- data |>
-    mutate(epop_total = epop*2,  # Total EPOP population - epop is different for each age group so double epop set above in if statements to get the total
+    mutate(epop_total = epop,  # Total EPOP population - epop is different for each age group so use aggregated epops in previous steps from pops in if statements
            easr = easr_first/epop_total, # easr calculation
            o_lower = numerator * (1 - (1/(9 * numerator)) - (1.96/(3 * sqrt(numerator))))^3,  # Lower CI
            o_upper = (numerator + 1)*(1 - (1/(9 * (numerator + 1))) +
@@ -271,6 +287,7 @@ calculate_easr_age <- function(data, epop_total,
     mutate(lowci = case_when(lowci < 0 ~ 0, TRUE ~ lowci))
   
   data <- data  |>
+    rename(age_group = age_group2) %>% 
     relocate(numerator, .after = age_group) |> 
     mutate(area_type = area_type) |> 
     relocate(area_type, .after = area)

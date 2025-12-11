@@ -95,17 +95,18 @@ scotland_table_count <- scotland_total_table %>%
   pivot_wider(names_from = Year, values_from = Individuals)
 
 ### Age Distribution ####
-scotland_age_totals <- scot_age_pops_easr_18plus %>%
+scotland_age_totals <- scot_pops_easr_18plus %>%
   filter(between(cal_year, 2020, 2023)) %>% 
   left_join(prevalence %>% 
-              mutate(area = factor('Scotland', levels = area_order, ordered = T),
-                     # as we are calculating 18-59 age group need to add these all together into one group
-                     age_group = case_when(age_group < "60-64" ~ "18-59",
-                                           .default = as.character(age_group)),
-                     age_group = factor(age_group, levels = age_order, ordered = T)) %>%
+              mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>% 
   relocate(year, .before = area) %>%
   mutate(area_type = 'National', .after = area) %>%
+  mutate(# as we are calculating 18-59 age group need to add these all together into one group
+         age_group2 = case_when(age_group < "60-64" ~ "18-59",
+                                .default = as.character(age_group)),
+         age_group2 = factor(age_group2, levels = age_order, ordered = T),
+         .after = age_group) %>% 
   mutate(numerator = case_when(is.na(individuals) ~ 0,
                                .default = individuals),
          denominator = pop, .after = sex) %>% 
@@ -115,13 +116,14 @@ scotland_age_totals <- scot_age_pops_easr_18plus %>%
 scotland_age_chart <- scotland_age_totals %>%
   # Create a group for the under 59s (check if this is valid practice)
   # function below will be added so 1 == 55200 sized population (addition on groups 4-12 using age groups 18 and 19 in group 4, 1100 pop each)
-  left_join(easr_pops %>% 
-              mutate(age_group = case_when(age_group < "60-64" ~ "18-59",
-                                           .default = age_group),
-                     age_group = factor(age_group, levels = age_order, ordered = T),
-                     epop = case_when(age_group == '18-59' ~ 1,
-                                      .default = epop)) %>% 
-              distinct()) %>% 
+  left_join(easr_pops) %>% 
+  # left_join(easr_pops %>% 
+  #             mutate(age_group = case_when(age_group < "60-64" ~ "18-59",
+  #                                          .default = age_group),
+  #                    age_group = factor(age_group, levels = age_order, ordered = T),
+  #                    epop = case_when(age_group == '18-59' ~ 1,
+  #                                     .default = epop)) %>% 
+  #             distinct()) %>% 
   # function to handle the age groups
   calculate_easr_age(epop_total = max_epop_18plus, area_type = first(area_type), epop_age = '18+')
 
