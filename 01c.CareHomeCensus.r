@@ -1,8 +1,18 @@
 ###Care home census####
 ##We get this extract form th chc team###
 
+extracts <- c("/PHI_conf/Dementia_Index/data/extracts/dementia_CareHomeCensus_2017_18_to_2023_24.xlsx",
+              "/PHI_conf/Dementia_Index/data/extracts/final_dementia_CHC_2024_25.xlsx")
 
-CareHomeCensus <- read_excel("/PHI_conf/Dementia_Index/data/extracts/dementia_CareHomeCensus_2017_18_to_2023_24.xlsx")
+chc_extract_1 <- read_excel(extracts[1])
+chc_extract_2 <- read_excel(extracts[2])%>% 
+  # these colum types differ from previous extract
+  mutate(UPI_NUMBER = as.character(UPI_NUMBER),
+         DateOfAdmission = as.Date(DateOfAdmission),
+         DateOfDischarge = as.Date(DateOfDischarge),
+         DateOfBirth = as.Date(DateOfBirth))
+
+CareHomeCensus <- bind_rows(chc_extract_1, chc_extract_2)
 View(CareHomeCensus)
 
 
