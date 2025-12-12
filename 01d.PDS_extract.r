@@ -6,7 +6,7 @@
 source("00.setup.r")
 ##get data
 pdsextract <- 
-  readRDS("/PHI_conf/Dementia_Index/data/extracts/pds_dementia_index_extract-2024_25-Q2.rds")
+  readRDS("/PHI_conf/Dementia_Index/data/extracts/pds_dementia_index_extract-2025_26-Q2.rds")
 names(pdsextract)
 
 #check only one record per chi
