@@ -148,7 +148,7 @@ gp_data_age_groups_all <- gp_data %>%
 # numbers to numbers comparison with index prevalence ####
 ## 65 plus ####
 prev_comparison_65plus <- prevalence_all_65plus %>% 
-  filter(year >= "2021/22") %>% 
+  filter(year %in% unique(gp_data_age_groups_all$year)) %>% 
   rename(count_index = individuals) %>%
   # add totals for all people
   group_by(year, hscp2019name, age_group) %>%
@@ -220,7 +220,8 @@ gp_65plus_rate_comp <- gp_data_65plus %>%
   select(-gender)
 
 gp_65plus_comp_rate <- index_65plus_rate_comp %>% 
-  filter(year >= "2021/2022") %>% 
+  # filter(year >= "2021/2022") %>% 
+  filter(year %in% unique(gp_data_age_groups_all$year)) %>% 
   # left_join(gp_65plus_rate_comp) %>% 
   bind_rows(gp_65plus_rate_comp) %>% 
   arrange(hscp2019name, year) %>% 
@@ -313,7 +314,7 @@ prev_comparsion_ages_source_numbers <- bind_rows(
   #   pivot_wider(names_from = age_group, values_from = count_gp_dementia) %>% 
   #   mutate(source = 'GP Dashboard')
   ) %>% 
-  filter(year >= "2021/22") %>% 
+  filter(year %in% unique(gp_data_age_groups_all$year)) %>% 
   select(year, hscp2019name, source, everything()) %>% 
   arrange(hscp2019name, year, source)
 
@@ -328,7 +329,7 @@ prev_comparsion_ages_source_rates <- bind_rows(
     pivot_wider(names_from = age_group, values_from = rate, values_fill = 0) %>% 
     mutate(source = 'GP Dashboard')
 ) %>% 
-  filter(year >= "2021/22") %>% 
+  filter(year %in% unique(gp_data_age_groups_all$year)) %>% 
   select(year, hscp2019name, source, everything()) %>% 
   arrange(hscp2019name, year, source)
 
@@ -353,7 +354,7 @@ shared_prev_comparsion_ages_source_rates_chart <- SharedData$new(
 
 ### Rates ####
 index_rates_comp <- prevalence_all_rates %>% 
-  filter(year >= "2021/22",
+  filter(year %in% unique(gp_data_age_groups_all$year),
          age_group > "60-64") %>% 
   mutate(age_group = case_when(age_group %in% c('65-69', '70-74') ~ '65-74',
                                age_group %in% c('75-79', '80-84') ~ '75-84',

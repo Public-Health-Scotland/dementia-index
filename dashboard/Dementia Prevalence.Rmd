@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = FALSE)
 #### <span style="color:red;text-decoration:underline;font-size:28px">**Not for onward distribution.**</span>
 
 #### <span style="text-decoration:underline">**Dementia Index Recorded Prevalence**</span>
-#### **Scotland and HSCP Level 2017/18 - 2023/24** 
+#### **Scotland and HSCP Level 2017/18 - 2024/25** 
 
 Dashboard showing recorded prevalence and death figures for people aged 18+ at Scotland and HSCP level with age, sex, SIMD and urban rural classification breakdowns.
 
@@ -917,7 +917,7 @@ function filter_default() {
   [0].selectize.removeOption("");
   
   document.getElementById("year_select_simd2").getElementsByClassName("selectized") 
-  [0].selectize.setValue("2023/24", false);
+  [0].selectize.setValue("2024/25", false);
   
   document.getElementById("area_select_urc").getElementsByClassName("selectized")
   [0].selectize.removeOption("");
@@ -935,7 +935,7 @@ function filter_default() {
   [0].selectize.removeOption("");
   
   document.getElementById("year_select_urc").getElementsByClassName("selectized") 
-  [0].selectize.setValue("2023/24", false);
+  [0].selectize.setValue("2024/25", false);
   
   }
   

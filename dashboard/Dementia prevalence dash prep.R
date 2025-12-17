@@ -61,8 +61,8 @@ age_order2 <- c(age_order[1:6], "85+")
 age_order_gp <- c(age_order[2:6], "85+")
 
 dates <- dmy(31032018)
-dates <- seq.Date(dates, dates+years(6), by = 'year')
-fy_dates <- sort(unique(extract_fin_year(index$diagnosis_date)))[9:15]
+dates <- seq.Date(dates, dates+years(7), by = 'year')
+fy_dates <- sort(unique(extract_fin_year(index$diagnosis_date)))[9:16]
 
 ## bind all years of interest together ####
 ### number with source ####
@@ -150,14 +150,6 @@ prevalence_all_65plus <- prevalence_all %>%
 # population data (2014-2024) ####
 pops <- readRDS("/conf/linkage/output/lookups/Unicode/Populations/Estimates/HSCP2019_pop_est_1981_2024.rds") %>% 
   filter(year >= 2014)
-
-# all ages
-pops_age_groups_ca <- pops %>% 
-  mutate(age_group = create_age_groups(age, from = 0, to = 90, by = 5, as_factor = TRUE),
-         age_group = case_when(age_group < "60-64" ~ "0-59",
-                               .default = as.character(age_group)),
-         age_group = factor(age_group, levels = age_order, ordered = T)) %>% 
-  summarise(pop = sum(pop), .by = c(year, hscp2019name, age_group, sex_name))
 
 # 18+
 pops_age_groups_ca <- pops %>%
@@ -284,7 +276,7 @@ dbDisconnect(SMRAConnection)
 keyring::keyring_lock("DATABASE")
 
 all_deaths_ca <- deaths %>% 
-  filter(between(date_of_death, cohort_start_date, dmy(31032024)),
+  filter(between(date_of_death, cohort_start_date, dmy(31032025)),
          age >= 65) %>% 
   mutate(hscp2019name = factor(phsmethods::match_area(hscp_2019), 
                                levels = area_order, ordered = TRUE),
@@ -364,13 +356,13 @@ deaths_caused_nrs <- deaths_flagged %>%
                                    .default = 0)) %>% 
   summarise(`Deaths caused by dementia`  = sum(flag_dementia),
             .by = c(fin_year, hscp2019name)) %>% 
-  filter(between(fin_year, "2017/18", "2023/24"))
+  filter(between(fin_year, "2017/18", "2024/25"))
 
 # deaths which mention dementia
 deaths_mentioned_nrs <- deaths_flagged %>%
   summarise(`Deaths mentioning dementia` = sum(flag_dementia),
             .by = c(fin_year, hscp2019name)) %>% 
-  filter(between(fin_year, "2017/18", "2023/24"))
+  filter(between(fin_year, "2017/18", "2024/25"))
 
 nrs_deaths <- left_join(deaths_caused_nrs, deaths_mentioned_nrs) %>%
   group_by(fin_year) %>% 
