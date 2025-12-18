@@ -72,4 +72,8 @@ simd_pops_easr_18plus <- dz_pop %>%
 simd_pops_easr_18plus %<>% 
   bind_rows(simd_pops_easr_18plus %>% 
               filter(cal_year == 2022) %>% 
-              mutate(cal_year = 2023)) %>% distinct()
+              mutate(cal_year = 2023)) %>% 
+  bind_rows(simd_pops_easr_18plus %>% 
+              filter(cal_year == 2022) %>% 
+              mutate(cal_year = 2024)) %>% 
+  distinct()

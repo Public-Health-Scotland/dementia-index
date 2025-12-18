@@ -14,7 +14,7 @@ library(scales)
 library(plotly)
 
 # Dementia Index - Publication Charts and Tables
-# Years 2020/21-2023/24
+# Years 2020/21-2024/25
 
 # import data ####
 code_folder <- paste0(here::here(), "/Publications/2026_02 - Identified Dementia Population/")
@@ -35,7 +35,7 @@ index <- readRDS(paste0('/PHI_conf/Dementia_Index/data/INDEX/dementia_index_firs
 
 # end dates for required years for age calculations
 year_end_date <- dmy(31032021)
-year_end_dates <- seq.Date(year_end_date, year_end_date+years(3), by = 'year')
+year_end_dates <- seq.Date(year_end_date, year_end_date+years(4), by = 'year')
 
 # set age groups and areas as factors
 age_order <- c("18-59", create_age_groups(seq(60, 90, by=5), 60, 90, by = 5, as_factor = F))
@@ -60,8 +60,8 @@ prevalence <- bind_rows(lapply(year_end_dates, prev_pl_df_easr, df = index))
 
 ### Total #### 
 scotland_total <- scot_pops_easr_18plus %>%
-  # use population figures for years 2020:2023
-  filter(between(cal_year, 2020, 2023)) %>% 
+  # use population figures for years 2020:2024
+  filter(between(cal_year, 2020, 2024)) %>% 
   left_join(prevalence %>%
               mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>%
@@ -96,7 +96,7 @@ scotland_table_count <- scotland_total_table %>%
 
 ### Age Distribution ####
 scotland_age_totals <- scot_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2023)) %>% 
+  filter(between(cal_year, 2020, 2024)) %>% 
   left_join(prevalence %>% 
               mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>% 
@@ -164,7 +164,7 @@ scotland_sex_table_count <- scotland_sex_table %>%
 
 ### Deprivation ####
 scotland_dep_total <- simd_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2023)) %>% 
+  filter(between(cal_year, 2020, 2024)) %>% 
   left_join(prevalence %>%
               mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex, simd2020v2_sc_quintile))) %>%
@@ -200,7 +200,7 @@ scotland_dep_table_count <- scotland_dep_table %>%
 
 ## Health Board - Total ####
 hb_total <- hb_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2023)) %>% 
+  filter(between(cal_year, 2020, 2024)) %>% 
   left_join(prevalence %>%
               mutate(area = factor(hbres, levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>%
@@ -234,7 +234,7 @@ hb_table_count <- hb_total_table %>%
 
 ## HSCP - Total ####
 hscp_total <- hscp_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2023)) %>% 
+  filter(between(cal_year, 2020, 2024)) %>% 
   left_join(prevalence %>%
               mutate(area = factor(hscp2019name, levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>%
