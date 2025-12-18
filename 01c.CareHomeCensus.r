@@ -10,7 +10,8 @@ chc_extract_2 <- read_excel(extracts[2])%>%
   mutate(UPI_NUMBER = as.character(UPI_NUMBER),
          DateOfAdmission = as.Date(DateOfAdmission),
          DateOfDischarge = as.Date(DateOfDischarge),
-         DateOfBirth = as.Date(DateOfBirth))
+         DateOfBirth = as.Date(DateOfBirth)) %>% 
+  rename(DementiaNMD = SuspectedDementia)
 
 CareHomeCensus <- bind_rows(chc_extract_1, chc_extract_2)
 View(CareHomeCensus)
