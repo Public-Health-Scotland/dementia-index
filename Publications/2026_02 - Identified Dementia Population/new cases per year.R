@@ -28,7 +28,7 @@ annual_dementia_counts <- dementia_initial_diagnoses %>%
     financial_year = extract_fin_year(diagnosis_date)
   ) %>%
   filter(
-    financial_year %in% (c("2020/21", "2021/22", "2022/23", "2023/24"))
+    financial_year %in% (c("2020/21", "2021/22", "2022/23", "2023/24", "2024/25"))
   ) %>%
   count(financial_year, name = "n_people") %>%
   arrange(financial_year)
@@ -47,7 +47,7 @@ p <- ggplot(annual_dementia_counts, aes(x = financial_year, y = n_people)) +
   geom_col(fill = "#2b6cb0") +
   labs(
     title = "Annual New Dementia Cases (Financial Year)",
-    subtitle = "Financial Years 2020/21 to 2023/24",
+    subtitle = "Financial Years 2020/21 to 2024/25",
     x = "Financial Year",
     y = "Count of People"
   ) +
