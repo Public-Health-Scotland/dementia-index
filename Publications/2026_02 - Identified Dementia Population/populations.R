@@ -77,3 +77,34 @@ simd_pops_easr_18plus %<>%
               filter(cal_year == 2022) %>% 
               mutate(cal_year = 2024)) %>% 
   distinct()
+
+### Scotland URC Pops ####
+dz_urc <- readRDS("/conf/linkage/output/lookups/Unicode/Geography/Urban Rural Classification/DataZone2011_urban_rural_2020v2.rds") %>% 
+  select(datazone2011, UR8_2020_name)#UR6_2020_name) 
+
+urc_pops_easr_18plus <- dz_pop %>% 
+  filter(cal_year > 2019) %>%
+  select(cal_year, datazone2011, age18:age90plus, sex) %>%
+  pivot_longer(cols = starts_with('age'), names_to = "age",
+               # names_pattern = "age(\\d+)",
+               names_transform = list(age = ~ as.numeric(gsub("age|plus", "", .x))),
+               values_to = 'pop') %>% arrange((age)) %>% 
+  mutate(area = factor('Scotland', levels = area_order, ordered = T),
+         age_group = create_age_groups(age, as_factor = T),
+         sex = case_match(sex,
+                          'M' ~ 1,
+                          .default = 2)) %>% 
+  left_join(dz_urc) %>% 
+  summarise(pop = sum(pop),
+            .by = c(cal_year, area, age_group, sex, UR8_2020_name)) %>% 
+  arrange(area, cal_year, age_group, UR8_2020_name, sex)
+
+# use 2022 populations for missing 2023 data
+urc_pops_easr_18plus %<>% 
+  bind_rows(urc_pops_easr_18plus %>% 
+              filter(cal_year == 2022) %>% 
+              mutate(cal_year = 2023)) %>% 
+  bind_rows(urc_pops_easr_18plus %>% 
+              filter(cal_year == 2022) %>% 
+              mutate(cal_year = 2024)) %>% 
+  distinct()

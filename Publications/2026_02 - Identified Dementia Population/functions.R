@@ -8,12 +8,8 @@ prev_pl_df_easr <- function(df, date_end_yr){
   df <- df %>%
     # calculate age at end of the financial year
     mutate(age_at_eoy = floor(time_length(interval(date_of_birth, date_end_yr), 'years')),
-           # inv dash looks like it use one instance of age at times and not calculating at each year from SLF
-           # age_group = create_age_groups(age_at_diagnosis, from = 0, to = 90, by = 5, as_factor = TRUE),
            age_group = create_age_groups(age_at_eoy, as_factor = TRUE),
-           # age_group = factor(age_group, levels = age_order, ordered = T),
            diag_year = extract_fin_year(diagnosis_date))
-  
   
   fy_yr1 <- substr(date_end_yr, 1, 4)
   fy_date <- paste0(as.character(as.numeric(fy_yr1)-1), "/", substr(fy_yr1, 3, 4))
@@ -28,7 +24,7 @@ prev_pl_df_easr <- function(df, date_end_yr){
            hscp2019name = factor(hscp2019name, levels = area_order, ordered = T),
            hbres = factor(hbres, levels = area_order, ordered = T),
            cal_year = as.numeric(substr(year, 1, 4))) %>% 
-    select(year, cal_year, postcode, hscp2019name, hbres, age_group, sex, simd2020v2_sc_quintile, source)
+    select(year, cal_year, postcode, hscp2019name, hbres, age_group, sex, simd2020v2_sc_quintile, ur6_2022_name, ur8_2022_name, source)
 }
 
 # Functions below adapted from ScotPHO code
@@ -84,7 +80,7 @@ calculate_easr <- function(data, epop_total,
   # aggregating by year, code and time
   data <- data |>
     select(-c(age_group, sex))|>
-    group_by(across(any_of(c("year", "area", "area_type", "quintile", "quint_type")))) |>
+    group_by(across(any_of(c("year", "area", "area_type", "quintile", "quint_type", "UR8_2020_name")))) |>
     summarise_all(sum, na.rm =T) |>
     ungroup()
   
