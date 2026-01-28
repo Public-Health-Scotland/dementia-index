@@ -320,8 +320,20 @@ hscp_table_count <- hscp_total_table %>%
   select(-Rate) %>% 
   pivot_wider(names_from = Year, values_from = Individuals)
 
+# Deaths within reporting period####
+# number of deaths (any cause) for those who have died within the reporting period 2020/21 - 2024/25
+scotland_deaths <- index %>%
+  filter(between(date_of_death, dmy(01042020), max(year_end_dates)),
+         !is.na(date_of_death)) %>%
+  mutate(year = extract_fin_year(date_of_death),
+         area = 'Scotland') %>% 
+  summarise(individuals = n(), 
+            .by = c(area, year)) %>% 
+  arrange(year) %>% 
+  pivot_wider(names_from = year, values_from = individuals)
+  
 
-# save out table data
+# save out table data ####
 table_data <- list(
   "Scotland total - Rate" = scotland_table_rate,
   "Sex split - Rate" = scotland_sex_table_rate,
@@ -331,6 +343,7 @@ table_data <- list(
   "Health Boards - Rate" = hb_table_rate,
   "HSCP - Rate" = hscp_table_rate,
   "Scotland total - Count" = scotland_table_count,
+  "Scotland deaths - Count" = scotland_deaths,
   "Sex split - Count" = scotland_sex_table_count,
   "Age split - Count" = scotland_age_table_count,
   "Deprivation - Count" = scotland_dep_table_count,
