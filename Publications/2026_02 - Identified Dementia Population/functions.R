@@ -1,8 +1,23 @@
 # functions for publication code
 
 ## EASR Functions ####
+# get the latest residence data based on all the records that we have for each person during the time period
+latest_residence <- function(df, year_end_date) {
+  df %>% 
+    filter(diagnosis_date <= year_end_date) %>% 
+    mutate(# !!sym(paste0("hscp_", year(year_end_date)-1)) := last(hscp2019name),
+      year = extract_fin_year(year_end_date),
+      postcode = last(postcode),
+      hscp2019name = last(hscp2019name),
+      hbres = last(hbres), 
+      simd2020v2_sc_quintile = last(simd2020v2_sc_quintile), 
+      ur8_2022_name = last(ur8_2022_name),
+      .by = upi_number, .keep = 'used') %>%
+    distinct()
+}
+
 # Outputs prevalence data in 5 year age groups upto 90+
-prev_pl_df_easr <- function(df, date_end_yr){
+prev_pl_df_easr <- function(df, date_end_yr, residence_df){
   # function takes in the index data (df) and date at the end of the year (either calendar or fy)
   
   df <- df %>%
@@ -21,10 +36,14 @@ prev_pl_df_easr <- function(df, date_end_yr){
            (date_of_death > date_end_yr | is.na(date_of_death))
     ) %>% 
     mutate(year = fy_date,
-           hscp2019name = factor(hscp2019name, levels = area_order, ordered = T),
-           hbres = factor(hbres, levels = area_order, ordered = T),
-           cal_year = as.numeric(substr(year, 1, 4))) %>% 
-    select(year, cal_year, postcode, hscp2019name, hbres, age_group, sex, simd2020v2_sc_quintile, ur6_2022_name, ur8_2022_name, source)
+           cal_year = as.numeric(substr(year, 1, 4))) %>%
+    # remove data we want to update
+    select(-c(postcode, hscp2019name, hbres, simd2020v2_sc_quintile, ur8_2022_name)) %>% 
+    # add in the latest residence information from all the records we hold on patients for each year of the time period
+    left_join(residence_df) %>%
+    mutate(hscp2019name = factor(hscp2019name, levels = area_order, ordered = T),
+           hbres = factor(hbres, levels = area_order, ordered = T)) %>% 
+    select(year, cal_year, postcode, hscp2019name, hbres, age_group, sex, simd2020v2_sc_quintile, ur8_2022_name, source)
 }
 
 # Functions below adapted from ScotPHO code

@@ -50,10 +50,29 @@ max_epop <- 200000
 # max epop for 18+ - (80700 per sex group)
 max_epop_18plus <- 161400
 
+# use all records to get the latest residence data for each year of analysis
+index_all <- readRDS(paste0('/PHI_conf/Dementia_Index/data/INDEX/dementia_index.rds')) %>% 
+  mutate(hscp2019name = case_when(
+    ca2019name == "City of Edinburgh" ~ "Edinburgh",
+    ca2019name == 'Na h-Eileanan Siar' ~ 'Western Isles',
+    ca2019name %in% c("Stirling", "Clackmannanshire") ~ "Clackmannanshire and Stirling",
+    .default = ca2019name)) %>%
+  # remove those with no Scottish residence data
+  filter(!is.na(ca2019name))
+
+# first remove anyone who died before the end of 2020/21 as they are not included in the analysis
+index_lookup <- index_all %>% 
+  filter(is.na(date_of_death) |
+           date_of_death >= dmy(01042021)) %>% 
+  arrange(upi_number, diagnosis_date) 
+
+# create the residence lookup
+residence_lookup <- bind_rows(lapply(year_end_dates, latest_residence, df = index_lookup))
+
 # Recorded Prevalence ####
 # get prevalence data for each patient per year
 # use easr for rates
-prevalence <- bind_rows(lapply(year_end_dates, prev_pl_df_easr, df = index))
+prevalence <- bind_rows(lapply(year_end_dates, prev_pl_df_easr, df = index, residence_df = residence_lookup))
 
 ## Scotland ####
 # Total, Age, Sex & Deprivation 
