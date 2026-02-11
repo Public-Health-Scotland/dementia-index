@@ -215,14 +215,47 @@ scotland_dep_table_rate <- scotland_dep_table %>%
 scotland_dep_table_count <- scotland_dep_table %>% 
   select(-Rate) %>% 
   pivot_wider(names_from = Year, values_from = Individuals)
-  
-### Urban Rural Classification (UR8) ####
+
+### Urban Rural Classification (UR6 & 8) ####  
 
 # URC 2022 present but cant find population figures for this so using 2020
 spd <- get_spd(col_select = c("pc7", "datazone2011")) %>%
   rename(postcode = pc7)
 
-scotland_urc_total <- urc_pops_easr_18plus %>%
+### Urban Rural Classification (UR6) ####
+scotland_urc6_total <- urc6_pops_easr_18plus %>%
+  filter(between(cal_year, 2020, 2024)) %>% 
+  left_join(prevalence %>% 
+              left_join(spd) %>% 
+              left_join(dz_urc) %>% 
+              mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
+              summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex, UR6_2020_name))) %>% 
+  relocate(year, .before = area) %>%
+  mutate(area_type = 'National', .after = area) %>% 
+  mutate(numerator = case_when(is.na(individuals) ~ 0,
+                               .default = individuals),
+         denominator = pop, .after = UR6_2020_name) %>% 
+  select(-c(cal_year, individuals, pop)) %>% 
+  fill(year, .direction = 'up')
+
+scotland_urc6_total_chart <- scotland_urc6_total %>%
+  left_join(easr_pops) %>%
+  calculate_easr(epop_total = max_epop_18plus, area_type = first(area_type), epop_age = '18+')
+
+# table data
+scotland_urc6_table <- scotland_urc6_total_chart %>% 
+  select(Year = year, Area = area, UR6 = UR6_2020_name, Individuals = numerator, Rate = rate)
+
+scotland_urc6_table_rate <- scotland_urc6_table %>% 
+  select(-Individuals) %>% 
+  pivot_wider(names_from = Year, values_from = Rate)
+
+scotland_urc6_table_count <- scotland_urc6_table %>% 
+  select(-Rate) %>% 
+  pivot_wider(names_from = Year, values_from = Individuals)
+
+#### Urban Rural Classification (UR8) ####
+scotland_urc8_total <- urc8_pops_easr_18plus %>%
   filter(between(cal_year, 2020, 2024)) %>% 
   left_join(prevalence %>% 
               left_join(spd) %>% 
@@ -237,19 +270,19 @@ scotland_urc_total <- urc_pops_easr_18plus %>%
   select(-c(cal_year, individuals, pop)) %>% 
   fill(year, .direction = 'up')
 
-scotland_urc_total_chart <- scotland_urc_total %>%
+scotland_urc8_total_chart <- scotland_urc8_total %>%
   left_join(easr_pops) %>%
   calculate_easr(epop_total = max_epop_18plus, area_type = first(area_type), epop_age = '18+')
 
 # table data
-scotland_urc_table <- scotland_urc_total_chart %>% 
+scotland_urc8_table <- scotland_urc8_total_chart %>% 
   select(Year = year, Area = area, UR8 = UR8_2020_name, Individuals = numerator, Rate = rate)
 
-scotland_urc_table_rate <- scotland_urc_table %>% 
+scotland_urc8_table_rate <- scotland_urc8_table %>% 
   select(-Individuals) %>% 
   pivot_wider(names_from = Year, values_from = Rate)
 
-scotland_urc_table_count <- scotland_urc_table %>% 
+scotland_urc8_table_count <- scotland_urc8_table %>% 
   select(-Rate) %>% 
   pivot_wider(names_from = Year, values_from = Individuals)
 
@@ -339,7 +372,8 @@ table_data <- list(
   "Sex split - Rate" = scotland_sex_table_rate,
   "Age split - Rate" = scotland_age_table_rate,
   "Deprivation - Rate" = scotland_dep_table_rate,
-  "URC 8 - Rate" = scotland_urc_table_rate,
+  "URC 6 - Rate" = scotland_urc6_table_rate,
+  "URC 8 - Rate" = scotland_urc8_table_rate,
   "Health Boards - Rate" = hb_table_rate,
   "HSCP - Rate" = hscp_table_rate,
   "Scotland total - Count" = scotland_table_count,
@@ -347,7 +381,8 @@ table_data <- list(
   "Sex split - Count" = scotland_sex_table_count,
   "Age split - Count" = scotland_age_table_count,
   "Deprivation - Count" = scotland_dep_table_count,
-  "URC 8 - Count" = scotland_urc_table_count,
+  "URC 6 - Count" = scotland_urc6_table_count,
+  "URC 8 - Count" = scotland_urc8_table_count,
   "Health Boards - Count" = hb_table_count,
   "HSCP - Count" = hscp_table_count
 )

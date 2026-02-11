@@ -11,6 +11,7 @@ latest_residence <- function(df, year_end_date) {
       hscp2019name = last(hscp2019name),
       hbres = last(hbres), 
       simd2020v2_sc_quintile = last(simd2020v2_sc_quintile), 
+      ur6_2022_name = last(ur6_2022_name),
       ur8_2022_name = last(ur8_2022_name),
       .by = upi_number, .keep = 'used') %>%
     distinct()
@@ -38,12 +39,12 @@ prev_pl_df_easr <- function(df, date_end_yr, residence_df){
     mutate(year = fy_date,
            cal_year = as.numeric(substr(year, 1, 4))) %>%
     # remove data we want to update
-    select(-c(postcode, hscp2019name, hbres, simd2020v2_sc_quintile, ur8_2022_name)) %>% 
+    select(-c(postcode, hscp2019name, hbres, simd2020v2_sc_quintile, ur6_2022_name, ur8_2022_name)) %>% 
     # add in the latest residence information from all the records we hold on patients for each year of the time period
     left_join(residence_df) %>%
     mutate(hscp2019name = factor(hscp2019name, levels = area_order, ordered = T),
            hbres = factor(hbres, levels = area_order, ordered = T)) %>% 
-    select(year, cal_year, postcode, hscp2019name, hbres, age_group, sex, simd2020v2_sc_quintile, ur8_2022_name, source)
+    select(year, cal_year, postcode, hscp2019name, hbres, age_group, sex, simd2020v2_sc_quintile, ur6_2022_name, ur8_2022_name, source)
 }
 
 # Functions below adapted from ScotPHO code
@@ -99,7 +100,7 @@ calculate_easr <- function(data, epop_total,
   # aggregating by year, code and time
   data <- data |>
     select(-c(age_group, sex))|>
-    group_by(across(any_of(c("year", "area", "area_type", "quintile", "quint_type", "UR8_2020_name")))) |>
+    group_by(across(any_of(c("year", "area", "area_type", "quintile", "quint_type", "UR6_2020_name", "UR8_2020_name")))) |>
     summarise_all(sum, na.rm =T) |>
     ungroup()
   
