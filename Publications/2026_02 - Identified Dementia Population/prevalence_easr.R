@@ -254,7 +254,7 @@ scotland_urc6_table_count <- scotland_urc6_table %>%
   select(-Rate) %>% 
   pivot_wider(names_from = Year, values_from = Individuals)
 
-#### Urban Rural Classification (UR8) ####
+### Urban Rural Classification (UR8) ####
 scotland_urc8_total <- urc8_pops_easr_18plus %>%
   filter(between(cal_year, 2020, 2024)) %>% 
   left_join(prevalence %>% 
