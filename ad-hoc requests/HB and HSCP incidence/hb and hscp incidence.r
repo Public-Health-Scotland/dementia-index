@@ -25,13 +25,9 @@ if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
 # -------------------------------------------------------------------------
 dementia_index <- readRDS(input_path) %>%
   mutate(
-    # Handle missing Health Board values (including Rest of UK / Outside UK)
-    hbres = if_else(is.na(hbres), "Unknown / Rest of UK / Outside UK", hbres),
-    
     # Create the HSCP field based on Local Authority (ca2019name)
-    # Handle Clackmannanshire/Stirling merge, naming mismatches, and NAs
+    # Handle Clackmannanshire/Stirling merge and naming mismatches
     HSCP = case_when(
-      is.na(ca2019name) ~ "Unknown / Rest of UK / Outside UK",
       ca2019name %in% c("Stirling", "Clackmannanshire") ~ "Clackmannanshire and Stirling",
       ca2019name == "City of Edinburgh" ~ "Edinburgh",
       ca2019name == "Na h-Eileanan Siar" ~ "Western Isles",
@@ -39,7 +35,7 @@ dementia_index <- readRDS(input_path) %>%
     )
   )
 
-# Identify the earliest diagnosis date per person
+# Identify the earliest diagnosis date per person (run on the FULL dataset)
 dementia_initial_diagnoses <- dementia_index %>%
   group_by(upi_number) %>%
   arrange(diagnosis_date, .by_group = TRUE) %>%
@@ -53,6 +49,8 @@ dementia_initial_diagnoses <- dementia_index %>%
 
 # Create base dataset of new cases in the requested financial years
 base_new_cases <- dementia_initial_diagnoses %>%
+  # Drop cases with missing geography, after establishing true incidence
+  filter(!is.na(hbres) & !is.na(ca2019name)) %>%
   filter(!is.na(diagnosis_date)) %>%
   mutate(financial_year = extract_fin_year(diagnosis_date)) %>%
   filter(
