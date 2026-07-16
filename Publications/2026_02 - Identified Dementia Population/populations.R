@@ -72,4 +72,58 @@ simd_pops_easr_18plus <- dz_pop %>%
 simd_pops_easr_18plus %<>% 
   bind_rows(simd_pops_easr_18plus %>% 
               filter(cal_year == 2022) %>% 
-              mutate(cal_year = 2023)) %>% distinct()
+              mutate(cal_year = 2023)) %>% 
+  bind_rows(simd_pops_easr_18plus %>% 
+              filter(cal_year == 2022) %>% 
+              mutate(cal_year = 2024)) %>% 
+  distinct()
+
+### Scotland URC Pops ####
+dz_urc <- readRDS("/conf/linkage/output/lookups/Unicode/Geography/Urban Rural Classification/DataZone2011_urban_rural_2020v2.rds") %>% 
+  select(datazone2011, UR6_2020_name, UR8_2020_name) 
+
+urc_pops_easr_18plus <- dz_pop %>% 
+  filter(cal_year > 2019) %>%
+  select(cal_year, datazone2011, age18:age90plus, sex) %>%
+  pivot_longer(cols = starts_with('age'), names_to = "age",
+               # names_pattern = "age(\\d+)",
+               names_transform = list(age = ~ as.numeric(gsub("age|plus", "", .x))),
+               values_to = 'pop') %>% arrange((age)) %>% 
+  mutate(area = factor('Scotland', levels = area_order, ordered = T),
+         age_group = create_age_groups(age, as_factor = T),
+         sex = case_match(sex,
+                          'M' ~ 1,
+                          .default = 2)) %>% 
+  left_join(dz_urc) 
+
+#### UR6 ####
+urc6_pops_easr_18plus <- urc_pops_easr_18plus%>% 
+  summarise(pop = sum(pop),
+            .by = c(cal_year, area, age_group, sex, UR6_2020_name)) %>% 
+  arrange(area, cal_year, age_group, UR6_2020_name, sex)
+
+# use 2022 populations for missing 2023/24 data
+urc6_pops_easr_18plus %<>% 
+  bind_rows(urc6_pops_easr_18plus %>% 
+              filter(cal_year == 2022) %>% 
+              mutate(cal_year = 2023)) %>% 
+  bind_rows(urc6_pops_easr_18plus %>% 
+              filter(cal_year == 2022) %>% 
+              mutate(cal_year = 2024)) %>% 
+  distinct()
+
+#### UR8 ####
+urc8_pops_easr_18plus <- urc_pops_easr_18plus%>% 
+  summarise(pop = sum(pop),
+            .by = c(cal_year, area, age_group, sex, UR8_2020_name)) %>% 
+  arrange(area, cal_year, age_group, UR8_2020_name, sex)
+
+# use 2022 populations for missing 2023/24 data
+urc8_pops_easr_18plus %<>% 
+  bind_rows(urc8_pops_easr_18plus %>% 
+              filter(cal_year == 2022) %>% 
+              mutate(cal_year = 2023)) %>% 
+  bind_rows(urc8_pops_easr_18plus %>% 
+              filter(cal_year == 2022) %>% 
+              mutate(cal_year = 2024)) %>% 
+  distinct()

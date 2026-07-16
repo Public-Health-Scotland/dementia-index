@@ -3,7 +3,7 @@
 ## run the setup file first#
 source("00.setup.r")
 library(lubridate)
-SC <- read_parquet(paste0(folder_data_path, "/extracts/Social_care_output.parquet"))
+SC <- read_parquet(paste0(folder_data_path, "/extracts/IR2025-00990_output.parquet"))
 
 ###infill dates where missing ####
 
