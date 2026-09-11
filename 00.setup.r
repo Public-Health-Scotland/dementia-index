@@ -27,7 +27,7 @@ SMRAConnection <- dbConnect(odbc(),
                             dsn = "SMRA",
                             uid = Sys.info()[["user"]], # Assumes the user's SMR01 username is the same as their R server username
                             pwd = keyring::key_get("SMRA", Sys.info()[["user"]], keyring = "DATABASE"))
-
+# pwd = .rs.askForPassword("Password:"))
 #Scottish postcode directory
 SPD <- readRDS("/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_1.rds")
 geogs_lookup <- SPD %>% select(pc7, ca2019, ca2019name, hb2019, hb2019name, ur6_2022, ur6_2022_name, ur8_2022, ur8_2022_name)
