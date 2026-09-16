@@ -20,20 +20,20 @@ cohort_start_date <- as.Date("2014-01-01")
 ##this will only work if you have keyring setup for SMRA
 # and have the password to the keyring (NOT your smra password)
 # saved in the file "~/database_keyring.R"
-keyring::keyring_unlock(keyring = "DATABASE",
-                        password = source("~/database_keyring.R")[["value"]])
+#keyring::keyring_unlock(keyring = "DATABASE",
+#                        password = source("~/database_keyring.R")[["value"]])
 
 SMRAConnection <- dbConnect(odbc(),
                             dsn = "SMRA",
                             uid = Sys.info()[["user"]], # Assumes the user's SMR01 username is the same as their R server username
-                            pwd = keyring::key_get("SMRA", Sys.info()[["user"]], keyring = "DATABASE"))
-# pwd = .rs.askForPassword("Password:"))
+                            #pwd = keyring::key_get("SMRA", Sys.info()[["user"]], keyring = "DATABASE"))
+                            pwd = .rs.askForPassword("Password:"))
 #Scottish postcode directory
-SPD <- readRDS("/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_1.rds")
+SPD <- readRDS("/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2026_1.rds")
 geogs_lookup <- SPD %>% select(pc7, ca2019, ca2019name, hb2019, hb2019name, ur6_2022, ur6_2022_name, ur8_2022, ur8_2022_name)
 
 ##simd lookup
-postcode_simd_carstairs <- readRDS("/conf/linkage/output/lookups/Unicode/Deprivation/postcode_2025_1_all_simd_carstairs.rds")
+postcode_simd_carstairs <- readRDS("/conf/linkage/output/lookups/Unicode/Deprivation/postcode_2026_1_all_simd_carstairs.rds")
 simd_lookup <- postcode_simd_carstairs %>%
   select(pc7, simd2020v2_sc_quintile,simd2020v2_sc_decile, simd2016_sc_quintile,
          simd2016_sc_decile, simd2012_sc_quintile, simd2012_sc_decile)
