@@ -19,23 +19,11 @@ pis <- extract_201718_202324 %>%
 
 #table(pis$disp_financial_year_name)
 ##chi - UPI lookup####
-clear_temp_tables(SMRAConnection)
-upis <- SMRAConnection %>% tbl(dbplyr::in_schema("UPIP", "L_UPI_DATA")) %>% 
-  inner_join(pis %>% select(pat_upi_c) %>% unique() %>% rename(CHI_NUMBER = pat_upi_c), copy = TRUE) %>%
-  filter(is.na(DELETION_INDICATOR)) %>% # remove any that have been marked as deleted
-  select(CHI_NUMBER,UPI_NUMBER, DATE_OF_BIRTH) %>%
-  distinct() %>% 
-  collect()
-
-pis <- pis  %>% left_join(upis, by = c("pat_upi_c" = "CHI_NUMBER"))
-
-#table(is.na(pis$UPI_NUMBER), phsmethods::chi_check(pis$pat_upi_c))
-#table(pis$UPI_NUMBER==pis$pat_upi_c, useNA="always")
-
-##UPI and DOB from CHI table where avlaible
-pis <- pis %>% 
-  mutate(pat_upi_c = case_when(!is.na(UPI_NUMBER) ~ UPI_NUMBER, T~pat_upi_c)) %>% 
-  mutate(pat_dob_clean = case_when(!is.na(DATE_OF_BIRTH) ~ as.Date(DATE_OF_BIRTH), T~pat_dob_clean))
+## TODO: CHI -> UPI resolution removed - UPIP access withdrawn.
+## The UPIP.L_UPI_DATA lookup previously replaced pat_upi_c with the master
+## UPI and overwrote pat_dob_clean with the CHI-database DATE_OF_BIRTH. Until
+## a replacement lookup exists the PIS-supplied pat_upi_c and pat_dob_clean
+## are used as-is.
 
 ##First valid record per person.  
 pis <- pis  %>%
@@ -52,8 +40,8 @@ pis <- pis  %>%
             postcode = first_(pat_postcode_c),
             sex = first_(pat_gender_code),
             dob = first_(pat_dob_clean),
-            ethnic_group = "09", # not available in PIS extract, data in previous PIS extracts is mainly 09, otherwise NA 
-            CHI_dob = first_(DATE_OF_BIRTH))
+            ethnic_group = "09" # not available in PIS extract, data in previous PIS extracts is mainly 09, otherwise NA 
+            )
 
 pis <- pis %>%
   rename_with(.cols = everything(), function(x){paste0("pis_", x)}) %>% mutate(source="PIS")

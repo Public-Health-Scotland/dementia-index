@@ -2,7 +2,7 @@
 ## Script 02. Join extracts ##########
 ######################################
 
-###Step 1 load data and use CHI database to convert CHI to UPIs
+###Step 1 load data
 ## 
 smr_all<- readRDS("/PHI_conf/Dementia_Index/data/cleaned_extracts/smr_first_icd10.rds") %>% ungroup()
 PDS <- readRDS("/PHI_conf/Dementia_Index/data/cleaned_extracts/PDS_clean.rds") %>% ungroup()
@@ -12,22 +12,11 @@ social_care <- readRDS("/PHI_conf/Dementia_Index/data/cleaned_extracts/SC_clean.
 PIS <- readRDS("/PHI_conf/Dementia_Index/data/cleaned_extracts/pis_clean.rds")%>% ungroup()
 
 ####CHI to UPI ####
-##SMRA sources should be OK.
+## TODO: CHI -> UPI resolution removed - UPIP access withdrawn.
+## An exploratory UPIP.L_UPI_DATA lookup against CHC sat here. Its result
+## ("upis") was never read by anything downstream, so removing it changes
+## no output.
 names(PDS)
-clear_temp_tables(SMRAConnection)
-##test using pds
-upis <- SMRAConnection %>% tbl(dbplyr::in_schema("UPIP", "L_UPI_DATA")) %>% 
-  inner_join(CHC %>% rename(CHI_NUMBER = CHC_UPI_NUMBER), copy = TRUE) %>%
-  filter(is.na(DELETION_INDICATOR)) %>% # remove any that have been marked as deleted
-  select(CHI_NUMBER,UPI_NUMBER, DATE_OF_BIRTH, CURRENT_POSTCODE, PREVIOUS_POSTCODE, DATE_ADDRESS_CHANGED) %>%
-  distinct() %>% 
-  collect() %>% 
-  rename(upi = CHI_NUMBER,
-         chi_dob = DATE_OF_BIRTH, 
-         chi_current_postcode = CURRENT_POSTCODE, 
-         chi_previous_postcode = PREVIOUS_POSTCODE, 
-         chi_date_postcode_change = DATE_ADDRESS_CHANGED) %>% 
-  mutate(chi_dob = as_date(chi_dob))
 
 ##Clean source names and select minimal required demographics####
 ##reame for consistency
@@ -71,7 +60,7 @@ PIS <- PIS %>% mutate(diagnosis_description = "prescription from BNF ch4.11") %>
          sex = pis_sex, 
          dob = pis_dob,
          ethnic_group = pis_ethnic_group) %>%
-  mutate(date_type="date_prescribed") %>% select(-pis_CHI_dob)
+  mutate(date_type="date_prescribed")
 
 names(dementia_deaths)
 PDS <- PDS %>%
@@ -91,7 +80,7 @@ social_care <- social_care %>%
          ethnic_group = submitted_ethnic_group, 
          postcode = best_postcode, 
          diagnosis_description = dementia_type
-  ) %>% select(-c(chi_gender, DATE_OF_BIRTH, social_care_id,financial_year,
+  ) %>% select(-c(chi_gender, social_care_id,financial_year,
                   quarter_client,financial_quarter_care_first, quarter_client_date,
                   dementia, quarter_fin_date, year_client_date, submitted_postcode)) %>%
   mutate(source="social care")
@@ -138,19 +127,14 @@ deaths_temp_1 <- as_tibble(
 deaths_temp_1 <- deaths_temp_1 %>% mutate(deaths_upi = case_when(is.na(upi_number)~ chi , T~upi_number)) %>%
   select(-chi, -upi_number)  
 
-death_upi <- SMRAConnection %>% tbl(dbplyr::in_schema("UPIP", "L_UPI_DATA")) %>% 
-  inner_join(deaths_temp_1 %>% select(deaths_upi) %>% rename(CHI_NUMBER = deaths_upi), copy = TRUE) %>%
-  filter(is.na(DELETION_INDICATOR)) %>% # remove any that have been marked as deleted
-  select(CHI_NUMBER,UPI_NUMBER) %>%
-  distinct() %>% 
-  collect()
-##se
-deaths_temp_1 <- deaths_temp_1 %>% left_join(death_upi, by = c("deaths_upi" = "CHI_NUMBER"))
-#table(deaths_temp_1$deaths_upi==deaths_temp_1$UPI_NUMBER, useNA="always")
+## TODO: CHI -> UPI resolution removed - UPIP access withdrawn.
+## The UPIP.L_UPI_DATA lookup previously re-resolved deaths_upi to the master
+## UPI. Until a replacement lookup exists the UPI_NUMBER supplied by
+## ANALYSIS.GRO_DEATHS_C (falling back to CHI) is used as-is, so a death whose
+## CHI has since been superseded may not link to the index.
 
-##update the upi and remove records where no upi or chi can be found
-deaths_temp_1 <- deaths_temp_1 %>% mutate(deaths_upi=case_when(is.na(UPI_NUMBER)~ deaths_upi, T~UPI_NUMBER)) %>%
-  filter(!is.na(deaths_upi))
+##remove records where no upi or chi can be found
+deaths_temp_1 <- deaths_temp_1 %>% filter(!is.na(deaths_upi))
 length(unique(deaths_temp_1$deaths_upi))
 nrow(deaths_temp_1)
 
