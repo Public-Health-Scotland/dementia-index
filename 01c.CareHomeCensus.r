@@ -2,18 +2,30 @@
 ##We get this extract form th chc team###
 
 extracts <- c("/PHI_conf/Dementia_Index/data/extracts/dementia_CareHomeCensus_2017_18_to_2023_24.xlsx",
-              "/PHI_conf/Dementia_Index/data/extracts/final_dementia_CHC_2024_25.xlsx")
+              "/PHI_conf/Dementia_Index/data/extracts/final_dementia_CHC_2024_25.xlsx",
+              "/PHI_conf/Dementia_Index/data/extracts/Dementia_CHC_140101_170331.xlsx")
 
 chc_extract_1 <- read_excel(extracts[1])
 chc_extract_2 <- read_excel(extracts[2])%>% 
-  # these colum types differ from previous extract
+  # these column types differ from previous extract
   mutate(UPI_NUMBER = as.character(UPI_NUMBER),
          DateOfAdmission = as.Date(DateOfAdmission),
          DateOfDischarge = as.Date(DateOfDischarge),
          DateOfBirth = as.Date(DateOfBirth)) %>% 
   rename(DementiaNMD = SuspectedDementia)
 
-CareHomeCensus <- bind_rows(chc_extract_1, chc_extract_2)
+#may have to do something with FY for extracts 1 and 2
+
+chc_extract_3 <- read_excel(extracts[3], sheet = 'Sheet 1')%>% 
+  # these column types differ from previous extract
+  mutate(UPI_NUMBER = as.character(UPI_NUMBER),
+         DateOfAdmission = as.Date(DateOfAdmission),
+         DateOfDischarge = as.Date(DateOfDischarge),
+         DateOfBirth = as.Date(DateOfBirth)) %>% 
+  rename(DementiaNMD = SuspectedDementia) %>% 
+  select(-financial_year)
+
+CareHomeCensus <- bind_rows(chc_extract_1, chc_extract_2, chc_extract_3)
 View(CareHomeCensus)
 
 
