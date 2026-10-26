@@ -5,12 +5,13 @@
 #this file imports extracts from PIS 
 
 ###load in PIS and clean date formats - now one file in parquet format
-# PIS data 2017/18 - 2024/25
-extract_201718_202324 <- read_parquet("/PHI_conf/Dementia_Index/data/extracts/PIS/PIS_dementia_index_data_extract_201718-202425_IR2025-00954.parquet")
+# PIS data 01/01/2014 - 31/12/2025
 
-pis <- extract_201718_202324 %>% 
-  mutate(pat_dob_clean = ymd(substr(`Pat Date of Birth [C]`, 1, 10)),
-         presc_date_clean = ymd(substr(`Presc Date`, 1, 10)),
+extract_2014_2026 <- read_parquet("/PHI_conf/Dementia_Index/data/extracts/PIS/PIS_dementia_index_data_extract_Jan2014-Jul2026_IR2026-00773.parquet")
+
+pis <- extract_2014_2026 %>% 
+  mutate(pat_dob_clean = dmy(`Pat Date of Birth [C]`),
+         presc_date_clean = dmy(`Presc Date`), 
          pat_gender_code = case_match(`Pat Gender Description`,
                                       "Female" ~ 2, "Male" ~ 1,
                                       .default = NA)) %>%
@@ -27,8 +28,8 @@ pis <- extract_201718_202324 %>%
 
 ##First valid record per person.  
 pis <- pis  %>%
-  #filter dates before Apr 2017
-  filter(presc_date_clean >= as.Date("2017-04-01")) %>%
+  #filter dates before Jan 2014
+  filter(presc_date_clean >= as.Date("2014-04-01")) %>%
   ##remove missing and invalid chi
   mutate(valid_chi = phsmethods::chi_check(pat_upi_c)) %>%
   filter(valid_chi=="Valid CHI") %>%
