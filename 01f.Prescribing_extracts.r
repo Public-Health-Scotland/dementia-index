@@ -5,7 +5,7 @@
 #this file imports extracts from PIS 
 
 ###load in PIS and clean date formats - now one file in parquet format
-# PIS data 01/01/2014 - 31/12/2025
+# PIS data for presctiptions given 01/01/2014 - 07/08/2026
 
 extract_2014_2026 <- read_parquet("/PHI_conf/Dementia_Index/data/extracts/PIS/PIS_dementia_index_data_extract_Jan2014-Jul2026_IR2026-00773.parquet")
 
@@ -29,7 +29,7 @@ pis <- extract_2014_2026 %>%
 ##First valid record per person.  
 pis <- pis  %>%
   #filter dates before Jan 2014
-  filter(presc_date_clean >= as.Date("2014-04-01")) %>%
+  filter(presc_date_clean >= as.Date("2014-01-01")) %>%
   ##remove missing and invalid chi
   mutate(valid_chi = phsmethods::chi_check(pat_upi_c)) %>%
   filter(valid_chi=="Valid CHI") %>%
