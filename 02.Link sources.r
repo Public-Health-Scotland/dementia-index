@@ -109,7 +109,7 @@ upi_list <- unique(df$upi_number)
 unlinked_deaths <- dementia_deaths %>% filter(!upi_number %in% upi_list)
 names(unlinked_deaths)
 ##extract nrs date of death####
-death_start_date <- as.Date("2014-01-01")
+death_start_date <- as.Date("2010-01-01")
 ##identify any duplicate deaths before linking to main list. 
 deaths_temp_1 <- as_tibble(
   dbGetQuery(
