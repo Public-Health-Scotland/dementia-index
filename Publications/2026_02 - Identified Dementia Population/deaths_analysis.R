@@ -11,7 +11,7 @@ library(phsmethods)
 library(phslookups)
 
 code_folder <- paste0(here::here(), "/Publications/2026_02 - Identified Dementia Population/")
-outputs_folder <- "/PHI_conf/Dementia_Index/outputs/Publication 2026-02/"
+outputs_folder <- "/PHI_conf/Dementia_Index/outputs/Publication 2027-03/"
 
 # Index data
 index <- readRDS(paste0('/PHI_conf/Dementia_Index/data/INDEX/dementia_index_first_incidence_only.rds')) %>% 
@@ -133,8 +133,8 @@ index_deaths_count <- index_deaths %>%
 
 # rates
 scotland_death_total <- scot_pops_easr_18plus %>%
-  # use population figures for years 2020:2024
-  filter(between(cal_year, 2020, 2024)) %>% 
+  # use population figures for years 2020:2025
+  filter(between(cal_year, 2020, 2025)) %>% 
   left_join(index_deaths %>%
               mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>%
@@ -192,7 +192,7 @@ deaths_flagged <- deaths %>%
          hscp2019name = match_area(hscp_2019)) 
 
 ## check against NRS figures for yearly totals ####
-# https://www.nrscotland.gov.uk/publications/alzheimers-disease-and-other-dementia-deaths-in-scotland-2024/#
+# https://www.nrscotland.gov.uk/publications/alzheimers-disease-and-other-dementia-deaths-in-scotland-2025/#
 # latest year (2024) NRS - 10,618, us 10,607, difference of -11 people
 # update: NRS use all deaths not just those to Scottish residents
 # latest year (2024) NRS - 10,618, us 10,625, difference of +7 people
@@ -234,7 +234,7 @@ index %>%
               filter(flag_cause == 1) %>% 
               select(upi_number, flag_cause, year_of_registration)) %>% 
   filter(flag_cause == 1,
-         year_of_registration == 2024) %>% 
+         year_of_registration == 2025) %>% 
   filter(is.na(ca2019))
   # tabyl(year)
   tabyl(year_of_registration)
@@ -256,13 +256,13 @@ index_caused <- prev_residence %>%
 # missing records (2) (latest cal year)
 deaths_flagged %>% 
   filter(flag_cause == 1,
-         year_of_registration == 2024) %>% 
+         year_of_registration == 2025) %>% 
   filter(!upi_number %in% index_caused$upi_number)
 
 ## Caused EASR ####
 scotland_death_caused_total <- scot_pops_easr_18plus %>%
-  # use population figures for years 2020:2024
-  filter(between(cal_year, 2020, 2024)) %>% 
+  # use population figures for years 2020:2025
+  filter(between(cal_year, 2020, 2025)) %>% 
   left_join(index_caused %>%
               mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>%

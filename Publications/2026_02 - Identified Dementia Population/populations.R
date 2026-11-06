@@ -1,5 +1,5 @@
 # population data (2019 onwards) ####
-pops <- readRDS("/conf/linkage/output/lookups/Unicode/Populations/Estimates/HSCP2019_pop_est_1981_2024.rds") %>% 
+pops <- readRDS("/conf/linkage/output/lookups/Unicode/Populations/Estimates/HSCP2019_pop_est_1981_2025.rds") %>% 
   filter(year >= 2019) %>% 
   rename(cal_year = year)
 

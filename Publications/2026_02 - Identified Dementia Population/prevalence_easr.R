@@ -18,7 +18,7 @@ library(plotly)
 
 # import data ####
 code_folder <- paste0(here::here(), "/Publications/2026_02 - Identified Dementia Population/")
-outputs_folder <- "/PHI_conf/Dementia_Index/outputs/Publication 2026-02/"
+outputs_folder <- "/PHI_conf/Dementia_Index/outputs/Publication 2027-03/"
 
 # import functions
 source(paste0(code_folder, "/functions.R"))
@@ -35,7 +35,7 @@ index <- readRDS(paste0('/PHI_conf/Dementia_Index/data/INDEX/dementia_index_firs
 
 # end dates for required years for age calculations
 year_end_date <- dmy(31032021)
-year_end_dates <- seq.Date(year_end_date, year_end_date+years(4), by = 'year')
+year_end_dates <- seq.Date(year_end_date, year_end_date+years(5), by = 'year')
 
 # set age groups and areas as factors
 age_order <- c("18-59", create_age_groups(seq(60, 90, by=5), 60, 90, by = 5, as_factor = F))
@@ -79,8 +79,8 @@ prevalence <- bind_rows(lapply(year_end_dates, prev_pl_df_easr, df = index, resi
 
 ### Total #### 
 scotland_total <- scot_pops_easr_18plus %>%
-  # use population figures for years 2020:2024
-  filter(between(cal_year, 2020, 2024)) %>% 
+  # use population figures for years 2020:2025
+  filter(between(cal_year, 2020, 2025)) %>% 
   left_join(prevalence %>%
               mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>%
@@ -115,7 +115,7 @@ scotland_table_count <- scotland_total_table %>%
 
 ### Age Distribution ####
 scotland_age_totals <- scot_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2024)) %>% 
+  filter(between(cal_year, 2020, 2025)) %>% 
   left_join(prevalence %>% 
               mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>% 
@@ -183,7 +183,7 @@ scotland_sex_table_count <- scotland_sex_table %>%
 
 ### Deprivation ####
 scotland_dep_total <- simd_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2024)) %>% 
+  filter(between(cal_year, 2020, 2025)) %>% 
   left_join(prevalence %>%
               mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex, simd2020v2_sc_quintile))) %>%
@@ -224,7 +224,7 @@ spd <- get_spd(col_select = c("pc7", "datazone2011")) %>%
 
 ### Urban Rural Classification (UR6) ####
 scotland_urc6_total <- urc6_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2024)) %>% 
+  filter(between(cal_year, 2020, 2025)) %>% 
   left_join(prevalence %>% 
               left_join(spd) %>% 
               left_join(dz_urc) %>% 
@@ -256,7 +256,7 @@ scotland_urc6_table_count <- scotland_urc6_table %>%
 
 ### Urban Rural Classification (UR8) ####
 scotland_urc8_total <- urc8_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2024)) %>% 
+  filter(between(cal_year, 2020, 2025)) %>% 
   left_join(prevalence %>% 
               left_join(spd) %>% 
               left_join(dz_urc) %>% 
@@ -288,7 +288,7 @@ scotland_urc8_table_count <- scotland_urc8_table %>%
 
 ## Health Board - Total ####
 hb_total <- hb_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2024)) %>% 
+  filter(between(cal_year, 2020, 2025)) %>% 
   left_join(prevalence %>%
               mutate(area = factor(hbres, levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>%
@@ -322,7 +322,7 @@ hb_table_count <- hb_total_table %>%
 
 ## HSCP - Total ####
 hscp_total <- hscp_pops_easr_18plus %>%
-  filter(between(cal_year, 2020, 2024)) %>% 
+  filter(between(cal_year, 2020, 2025)) %>% 
   left_join(prevalence %>%
               mutate(area = factor(hscp2019name, levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>%
@@ -388,148 +388,3 @@ table_data <- list(
 )
 
 writexl::write_xlsx(table_data, paste0(outputs_folder, 'chart_table_data_18plus_rates.xlsx'))
-
-# Charts (Not used anymore - now done in excel) ####
-chart_colours <- unname(phs_colour_values)
-chart_annotation_colour <- 'white'
-
-## 18+ total rate ####
-ggplot(scotland_total_chart_18plus) +
-  geom_line(aes(x = year, y = rate, group = area, colour = area),
-            stat = 'identity', linewidth = 1, show.legend = F) +
-  ggtitle("") +
-  # ggtitle("People identified as living with dementia in Scotland",
-  #         subtitle = "EASR rate per 100,000") +
-  labs(x = 'Financial Year', y = 'Rate per 100,000') +
-  scale_colour_manual(values = chart_colours[1])  +
-  scale_y_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 1500)) +
-  
-  theme_dash()
-
-## Sex chart
-# chart_scotland_sex <- 
-ggplot(scotland_sex_total_chart %>% rename(Sex = sex)) +
-  geom_line(aes(x = year, y = rate, group = Sex, colour = Sex),
-            stat = 'identity', linewidth = 1) +
-  # ggtitle("People living with dementia at end of year by sex",
-  #         subtitle = 'Rate per 100,000 population') +
-  ggtitle('') +
-  labs(x = 'Financial Year', y = 'Rate per 100,000') +
-  scale_colour_manual(values = c(chart_colours[1:2]))  +
-  
-  scale_y_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 1500)) +
-  theme_dash() +
-  theme(legend.title = element_blank(), legend.text = element_text(size = 16))
-
-## Age groups - latest year ####
-# chart_scotland_age <- 
-ggplot(scotland_age_chart %>% filter(year == max(year))) +
-  geom_bar(mapping = aes(x = rate, y = age_group, colour = area, fill = area), stat = "identity") +
-  labs(x = 'Age Group', y = 'Rate per 100,000') +
-  ggtitle("") +
-  # ggtitle("People identified as living with dementia in Scotland by age group (2024)",
-  #         subtitle = 'Rate per 100,000 population') +
-  # scale_x_continuous(expand = c(0,0), labels = comma_format(big.mark = ",")) +
-  geom_text(aes(x = rate, y = age_group, label = prettyNum(round_half_up(rate, digits = 0), big.mark = ",", big.interval = 3), colour = 'text_colour'), 
-            size = 5, fontface = 'bold', nudge_x = 300) +
-  scale_colour_manual(values = c(chart_colours[1], 'black')) +
-  scale_fill_manual(values = c(chart_colours[1], 'black')) +
-  scale_x_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 12000)) +
-  
-  theme_bar()
-
-## Deprivation Charts ####
-ggplot(scotland_dep_total_chart %>% filter(year == max(year)),
-       aes(y = reorder(quintile, rate))) +
-  geom_bar(mapping = aes(x = rate, colour = quintile, fill = quintile), stat = "identity") +
-  geom_text(aes(x = rate, y = quintile, label = prettyNum(round_half_up(rate, digits = 0), big.mark = ",", big.interval = 3), colour = 'text_colour'), 
-            size = 5, hjust = 0.5, nudge_x = -200, fontface = 'bold') +
-  labs(x = 'Rate per 100,000', y = NULL) +
-  # ggtitle("People identified as living with dementia by HSCP (2024)",
-  #         subtitle = 'Rate per 100,000 population (18 plus)') +
-  ggtitle("") +
-  scale_x_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 1600)) +
-  scale_colour_manual(values = c(chart_colours[1:5], chart_annotation_colour)) +
-  scale_fill_manual(values = c(chart_colours[1:5], chart_annotation_colour)) +
-  # scale_y_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-  #                    limits = c(0, 15000)) +
-  
-  theme_bar()
-
-ggplot(scotland_dep_total_chart %>% filter(year == max(year)) %>% 
-         mutate(quintile = case_when(grepl("1 ", quintile) ~ "(Most Deprived) 1",
-                                     grepl("5 ", quintile) ~ "(Least Deprived) 5",
-                                     .default = quintile)),
-       aes(y = reorder(quintile, rate))) +
-  geom_bar(mapping = aes(x = rate, colour = area_type, fill = area_type), stat = "identity") +
-  geom_text(aes(x = rate, y = quintile, label = prettyNum(round_half_up(rate, digits = 0), big.mark = ",", big.interval = 3), colour = 'text_colour'), 
-            size = 5, hjust = 0.5, nudge_x = -200, fontface = 'bold') +
-  labs(x = 'Rate per 100,000', y = NULL) +
-  # ggtitle("People identified as living with dementia by HSCP (2024)",
-  #         subtitle = 'Rate per 100,000 population (18 plus)') +
-  ggtitle("") +
-  scale_x_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 1600)) +
-  scale_colour_manual(values = c(chart_colours[1], chart_annotation_colour)) +
-  scale_fill_manual(values = c(chart_colours[1], chart_annotation_colour)) +
-  # scale_y_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-  #                    limits = c(0, 15000)) +
-  
-  theme_bar()
-
-ggplot(scotland_dep_total_chart) +
-  geom_line(aes(x = year, y = rate, group = quintile, colour = quintile),
-            stat = 'identity', linewidth = 1.8, show.legend = F) +
-  
-  # ggtitle("People identified as living with dementia in Scotland",
-  #         subtitle = "EASR rate per 100,000") +
-  labs(x = 'Financial Year', y = 'Rate per 100,000') +
-  scale_colour_manual(values = chart_colours[1:5])  +
-  scale_y_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 1600)) +
-  
-  theme_dash()
-
-## HB Chart ####
-ggplot(hb_total_chart %>% filter(year == max(year)),
-       aes(y = reorder(area, rate))) +
-  geom_bar(mapping = aes(x = rate, colour = area_type, fill = area_type), stat = "identity") +
-  geom_text(aes(x = rate, y = area, label = prettyNum(round_half_up(rate, digits = 0), big.mark = ",", big.interval = 3), colour = 'text_colour'), 
-            size = 5, hjust = 0.5, nudge_x = -100, fontface = 'bold') +
-  labs(x = 'Rate per 100,000', y = NULL) +
-  # ggtitle("People identified as living with dementia by HSCP (2024)",
-  #         subtitle = 'Rate per 100,000 population (18 plus)') +
-  ggtitle("") +
-  scale_x_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 1500)) +
-  scale_colour_manual(values = c(chart_colours[1:2], chart_annotation_colour)) +
-  scale_fill_manual(values = c(chart_colours[1:2], chart_annotation_colour)) +
-  # scale_y_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-  #                    limits = c(0, 15000)) +
-  
-  theme_bar()
-
-## HSCP Chart ####
-ggplot(hscp_total_chart %>% filter(year == max(year)),
-       aes(y = reorder(area, rate))) +
-  geom_bar(mapping = aes(x = rate, colour = area_type, fill = area_type), stat = "identity",
-           width = 0.8) +
-  geom_text(aes(x = rate, y = area, label = prettyNum(round_half_up(rate, digits = 0), big.mark = ",", big.interval = 3), colour = 'text_colour'), 
-            size = 5, hjust = 0.5, nudge_x = -100, fontface = 'bold') +
-  labs(x = 'Rate per 100,000', y = NULL) +
-  # ggtitle("People identified as living with dementia by HSCP (2024)",
-  #         subtitle = 'Rate per 100,000 population (18 plus)') +
-  ggtitle("") +
-  scale_x_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-                     limits = c(0, 1750)) +
-  scale_colour_manual(values = c(chart_colours[1:2], chart_annotation_colour)) +
-  scale_fill_manual(values = c(chart_colours[1:2], chart_annotation_colour)) +
-  # scale_y_continuous(expand = c(0,0), labels = comma_format(big.mark = ","),
-  #                    limits = c(0, 15000)) +
-  
-  theme_bar() +
-  theme(axis.ticks.x = element_blank())

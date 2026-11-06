@@ -22,7 +22,7 @@ library(plotly)
 
 # import data ####
 code_folder <- paste0(here::here(), "/Publications/2026_02 - Identified Dementia Population/")
-outputs_folder <- "/PHI_conf/Dementia_Index/outputs/Publication 2026-02/"
+outputs_folder <- "/PHI_conf/Dementia_Index/outputs/Publication 2027-03/"
 
 # import functions
 source(paste0(code_folder, "/functions.R"))
@@ -37,7 +37,7 @@ index <- readRDS(paste0('/PHI_conf/Dementia_Index/data/INDEX/dementia_index_firs
 
 # end dates for required years for age calculations
 year_end_date <- dmy(31032021)
-year_end_dates <- seq.Date(year_end_date, year_end_date+years(4), by = 'year')
+year_end_dates <- seq.Date(year_end_date, year_end_date+years(5), by = 'year')
 
 # set age groups and areas as factors
 age_order <- c("18-59", create_age_groups(seq(60, 90, by=5), 60, 90, by = 5, as_factor = F))
@@ -69,8 +69,8 @@ incidence <- index %>%
 
 ### Total #### 
 scotland_total <- scot_pops_easr_18plus %>%
-  # use population figures for years 2020:2024
-  filter(between(cal_year, 2020, 2024)) %>% 
+  # use population figures for years 2020:2025
+  filter(between(cal_year, 2020, 2025)) %>% 
   left_join(incidence %>%
               mutate(area = factor('Scotland', levels = area_order, ordered = T)) %>%
               summarise(individuals = n(), .by = c(year, cal_year, area, age_group, sex))) %>%
