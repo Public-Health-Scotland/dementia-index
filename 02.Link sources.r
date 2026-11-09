@@ -310,9 +310,9 @@ names(dementia_index)
 saveRDS(dementia_index, "/PHI_conf/Dementia_Index/data/INDEX/dementia_index.rds")
 ###take first record per person, per source (some record currently have >1 type recorded)
 
-dementia_index_1row <- dementia_index %>%
-  group_by(upi_number) %>%
-  arrange(upi_number, diagnosis_date) %>% slice(1) %>% ungroup()
+# dementia_index_1row <- dementia_index %>%
+#   group_by(upi_number) %>%
+#   arrange(upi_number, diagnosis_date) %>% slice(1) %>% ungroup()
 saveRDS(dementia_index_1row , "/PHI_conf/Dementia_Index/data/INDEX/dementia_index_first_incidence_only.rds")
 ##save as index
 
