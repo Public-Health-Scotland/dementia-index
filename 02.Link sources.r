@@ -10,6 +10,7 @@ dementia_deaths <- readRDS("/PHI_conf/Dementia_Index/data/extracts/dementia_deat
 CHC <- readRDS("/PHI_conf/Dementia_Index/data/cleaned_extracts/CHC_clean.rds")%>% ungroup()
 social_care <- readRDS("/PHI_conf/Dementia_Index/data/cleaned_extracts/SC_clean.rds")%>% ungroup()
 PIS <- readRDS("/PHI_conf/Dementia_Index/data/cleaned_extracts/pis_clean.rds")%>% ungroup()
+#USC <- readRDS("/PHI_conf/Dementia_Index/data/cleaned_extracts/USC_clean.rds")%>% ungroup()
 
 ####CHI to UPI ####
 ## TODO: CHI -> UPI resolution removed - UPIP access withdrawn.
@@ -96,6 +97,11 @@ CHC <- CHC %>%
          diagnosis_description =CHC_dementia_subtype
   ) %>% mutate(date_type = "date of carehome admission")%>%
   select(-CHC_Sex)%>% mutate(source="Care home census")
+
+#USC <- USC %>% 
+  #mutate() %>% 
+  #rename() %>% 
+  #select()
 
 ##bind sources long ####
 ##except dementia deaths#
