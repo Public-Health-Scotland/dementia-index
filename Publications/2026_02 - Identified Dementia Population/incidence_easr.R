@@ -107,10 +107,10 @@ scotland_table_count <- scotland_total_table %>%
 
 table_data <- list(
   "Incidence Rate - All" = scotland_table_rate,
-  "Incidence count - All" = scotland_table_count,
+  "Incidence count - All" = scotland_table_count
   
-  "Incidence Rate - resident" = scotland_table_rate_res,
-  "Incidence Count - resident" = scotland_table_count_res
+  #"Incidence Rate - resident" = scotland_table_rate_res,
+  #"Incidence Count - resident" = scotland_table_count_res
 )
 
 writexl::write_xlsx(table_data, paste0(outputs_folder, 'incidence_easr.xlsx'))
