@@ -70,14 +70,16 @@ prev_residence <- index_all %>%
 # connect to SMRA
 cohort_start_date <- dmy(01012010)
 
-keyring::keyring_unlock(keyring = "DATABASE",
-                        password = source("~/database_keyring.R")[["value"]])
+#keyring::keyring_unlock(keyring = "DATABASE",
+#                        password = source("~/database_keyring.R")[["value"]])
+
+
 
 SMRAConnection <- dbConnect(odbc(),
                             dsn = "SMRA",
                             uid = Sys.info()[["user"]], # Assumes the user's SMR01 username is the same as their R server username
-                            pwd = keyring::key_get("SMRA", Sys.info()[["user"]], keyring = "DATABASE"))
-# pwd = .rs.askForPassword("What is your LDAP password?"))
+                            #pwd = keyring::key_get("SMRA", Sys.info()[["user"]], keyring = "DATABASE"))
+                            pwd = .rs.askForPassword("What is your LDAP password?"))
 
 deaths <- as_tibble(
   dbGetQuery(
@@ -97,7 +99,7 @@ deaths <- as_tibble(
 # AND country_of_residence ='XS'
 dbDisconnect(SMRAConnection)
 
-keyring::keyring_lock("DATABASE")
+#keyring::keyring_lock("DATABASE")
 
 spd <- get_spd(col_select = c("pc7", "datazone2011", "hscp2019name")) %>%
   rename(postcode = pc7)
@@ -235,7 +237,7 @@ index %>%
               select(upi_number, flag_cause, year_of_registration)) %>% 
   filter(flag_cause == 1,
          year_of_registration == 2025) %>% 
-  filter(is.na(ca2019))
+  filter(is.na(ca2019)) %>% 
   # tabyl(year)
   tabyl(year_of_registration)
 
