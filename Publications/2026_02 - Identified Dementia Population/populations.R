@@ -79,7 +79,7 @@ simd_pops_easr_18plus %<>%
   distinct()
 
 ### Scotland URC Pops ####
-dz_urc <- readRDS("/conf/linkage/output/lookups/Unicode/Geography/Urban Rural Classification/DataZone2011_urban_rural_2022.rds") %>% 
+dz_urc <- readRDS("/conf/linkage/output/lookups/Unicode/Geography/Urban Rural Classification/DataZone2011_urban_rural_2020v2.rds") %>% 
   select(datazone2011, UR6_2020_name, UR8_2020_name) 
 
 urc_pops_easr_18plus <- dz_pop %>% 
