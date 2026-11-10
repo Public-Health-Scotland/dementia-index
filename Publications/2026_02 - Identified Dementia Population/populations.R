@@ -49,7 +49,7 @@ scot_age_pops_easr_18plus <- pops %>%
             .by = c(cal_year, area, age_group, sex))
 
 ### Scotland SIMD pops ####
-dz_pop <- readRDS("/conf/linkage/output/lookups/Unicode/Populations/Estimates/DataZone2011_pop_est_2011_2022.rds") %>% 
+dz_pop <- readRDS("/conf/linkage/output/lookups/Unicode/Populations/Estimates/DataZone2011_pop_est_2011_2024.rds") %>% 
   rename(cal_year = year)
 
 simd_pops_easr_18plus <- dz_pop %>%
@@ -79,7 +79,7 @@ simd_pops_easr_18plus %<>%
   distinct()
 
 ### Scotland URC Pops ####
-dz_urc <- readRDS("/conf/linkage/output/lookups/Unicode/Geography/Urban Rural Classification/DataZone2011_urban_rural_2020v2.rds") %>% 
+dz_urc <- readRDS("/conf/linkage/output/lookups/Unicode/Geography/Urban Rural Classification/DataZone2011_urban_rural_2022.rds") %>% 
   select(datazone2011, UR6_2020_name, UR8_2020_name) 
 
 urc_pops_easr_18plus <- dz_pop %>% 
