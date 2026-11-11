@@ -28,7 +28,7 @@ outputs_folder <- "/PHI_conf/Dementia_Index/outputs/Publication 2027-03/"
 source(paste0(code_folder, "/functions.R"))
 
 # Index data
-index <- readRDS(paste0('/PHI_conf/Dementia_Index/data/INDEX/dementia_index_first_incidence_only.rds')) %>% 
+index <- readRDS(paste0('/PHI_conf/Dementia_Index/data/INDEX/dementia_index_first_incidence_only_no_chc.rds')) %>% 
   mutate(hscp2019name = case_when(
     ca2019name == "City of Edinburgh" ~ "Edinburgh",
     ca2019name == 'Na h-Eileanan Siar' ~ 'Western Isles',
